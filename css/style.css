@@ -1,0 +1,504 @@
+/* ============================================================
+   家庭综合台账管理平台 - 自定义样式（美化版）
+   技术栈：HTML5 + Bootstrap5 + PapaParse + ECharts5
+   ============================================================ */
+
+/* ---------- 全局 ---------- */
+:root {
+  --primary-red: #e74c3c;
+  --primary-red-dark: #c0392b;
+  --primary-blue: #3498db;
+  --primary-blue-dark: #2471a3;
+  --bg-body: #f0f2f5;
+  --card-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  --card-shadow-hover: 0 8px 24px rgba(0,0,0,0.10);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body {
+  background: linear-gradient(135deg, #f5f6fa 0%, #e8ecf1 50%, #f0f2f5 100%);
+  background-attachment: fixed;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, "Microsoft YaHei", sans-serif;
+  color: #2c3e50;
+}
+
+/* ---------- 导航栏 ---------- */
+.navbar {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 40%, #0f3460 100%) !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15) !important;
+  border-bottom: 2px solid rgba(255,255,255,0.06);
+}
+
+.navbar-brand {
+  letter-spacing: 0.5px;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.navbar-nav .nav-link {
+  transition: all var(--transition);
+  border-radius: 8px;
+  padding: 8px 16px;
+  color: rgba(255,255,255,0.65) !important;
+  font-size: 0.9rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.navbar-nav .nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 2px;
+  background: #fff;
+  border-radius: 1px;
+  transition: width var(--transition);
+}
+
+.navbar-nav .nav-link:hover {
+  color: #fff !important;
+  background-color: rgba(255,255,255,0.08);
+}
+
+.navbar-nav .nav-link:hover::after,
+.navbar-nav .nav-link.active::after {
+  width: 60%;
+}
+
+.navbar-nav .nav-link.active {
+  color: #fff !important;
+  background: rgba(255,255,255,0.12);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+/* ---------- 模块容器 ---------- */
+.module-container {
+  animation: fadeSlideIn 0.4s ease;
+}
+
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------- 卡片通用 ---------- */
+.card {
+  border: 1px solid rgba(0,0,0,0.04) !important;
+  border-radius: var(--radius) !important;
+  box-shadow: var(--card-shadow) !important;
+  transition: all var(--transition);
+  overflow: hidden;
+  background: #fff;
+}
+
+.card:hover {
+  box-shadow: var(--card-shadow-hover) !important;
+  transform: translateY(-2px);
+}
+
+/* ---------- 卡片头部 ---------- */
+.card-header {
+  background: linear-gradient(135deg, #fafbfc 0%, #f5f6f8 100%) !important;
+  border-bottom: 1px solid #eef0f2 !important;
+  font-size: 0.92rem;
+  letter-spacing: 0.3px;
+  padding: 12px 16px !important;
+}
+
+/* 模块1（记账）卡片头部左侧色条 */
+#moduleAccounting .card-header {
+  position: relative;
+  padding-left: 20px !important;
+}
+
+#moduleAccounting .card-header::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 4px;
+  background: linear-gradient(180deg, var(--primary-red) 0%, #e74c3c88 100%);
+  border-radius: 0 3px 3px 0;
+}
+
+/* 模块2（证件）卡片头部左侧色条 */
+#moduleDocuments .card-header {
+  position: relative;
+  padding-left: 20px !important;
+}
+
+#moduleDocuments .card-header::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 4px;
+  background: linear-gradient(180deg, var(--primary-blue) 0%, #3498db88 100%);
+  border-radius: 0 3px 3px 0;
+}
+
+/* ---------- 统计汇总卡 ---------- */
+#statsSummaryCard {
+  background: linear-gradient(135deg, #fefefe 0%, #fdf2f2 100%);
+  border: 1px solid rgba(231,76,60,0.12) !important;
+  border-radius: var(--radius) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+#statsSummaryCard::after {
+  content: '';
+  position: absolute;
+  right: -40px;
+  top: -40px;
+  width: 120px;
+  height: 120px;
+  background: radial-gradient(circle, rgba(231,76,60,0.04) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+#statsSummaryCard .badge {
+  font-size: 0.82rem;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  transition: all var(--transition);
+}
+
+#statsSummaryCard .badge:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+
+/* ---------- 表单控件美化 ---------- */
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--primary-red) !important;
+  box-shadow: 0 0 0 0.2rem rgba(231,76,60,0.15) !important;
+}
+
+#moduleDocuments .form-control:focus,
+#moduleDocuments .form-select:focus {
+  border-color: var(--primary-blue) !important;
+  box-shadow: 0 0 0 0.2rem rgba(52,152,219,0.15) !important;
+}
+
+.form-select-sm,
+.form-control-sm {
+  border-radius: 6px !important;
+  border-color: #dee2e6;
+  transition: all var(--transition);
+  font-size: 0.82rem;
+}
+
+.form-select-sm:hover,
+.form-control-sm:hover {
+  border-color: #bcc3cb;
+}
+
+/* ---------- 按钮美化 ---------- */
+.btn {
+  border-radius: 8px !important;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  transition: all var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%) !important;
+  border: none !important;
+  box-shadow: 0 4px 14px rgba(231,76,60,0.3);
+}
+
+.btn-danger:hover {
+  background: linear-gradient(135deg, #ec5a4b 0%, #d44637 100%) !important;
+  box-shadow: 0 6px 20px rgba(231,76,60,0.4);
+  transform: translateY(-1px);
+}
+
+.btn-outline-danger {
+  border: 1.5px solid var(--primary-red) !important;
+  color: var(--primary-red) !important;
+}
+
+.btn-outline-danger:hover {
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 14px rgba(231,76,60,0.25);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #3498db 0%, #2471a3 100%) !important;
+  border: none !important;
+  box-shadow: 0 4px 14px rgba(52,152,219,0.3);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #45a9e0 0%, #2e86c1 100%) !important;
+  box-shadow: 0 6px 20px rgba(52,152,219,0.4);
+  transform: translateY(-1px);
+}
+
+.btn-outline-primary {
+  border: 1.5px solid var(--primary-blue) !important;
+  color: var(--primary-blue) !important;
+}
+
+.btn-outline-primary:hover {
+  background: linear-gradient(135deg, #3498db 0%, #2471a3 100%) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 14px rgba(52,152,219,0.25);
+}
+
+/* ---------- 表格 ---------- */
+.table {
+  font-size: 0.85rem;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table thead th {
+  font-weight: 700;
+  font-size: 0.78rem;
+  text-transform: none;
+  letter-spacing: 0.3px;
+  color: #5a6a7e;
+  background: linear-gradient(180deg, #fafbfc 0%, #f0f2f5 100%);
+  border-bottom: 2px solid #e8ecf1 !important;
+  padding: 10px 8px;
+}
+
+.sticky-top {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.table-hover tbody tr {
+  transition: all 0.15s ease;
+}
+
+.table-hover tbody tr:hover {
+  background-color: #fef5f4 !important;
+  transform: scale(1.002);
+}
+
+/* 清洗后表格 */
+#giftCleanTable tbody tr,
+#docCleanTable tbody tr {
+  transition: all 0.15s ease;
+}
+
+/* 收入行 */
+tr.row-income {
+  background-color: #f0fdf4 !important;
+  border-left: 3px solid #22c55e;
+}
+tr.row-income td {
+  color: #14532d !important;
+}
+#giftCleanTable tbody tr.row-income:hover {
+  background-color: #dcfce7 !important;
+}
+
+/* 支出/送礼行 */
+tr.row-outcome {
+  background-color: #fef2f2 !important;
+  border-left: 3px solid #ef4444;
+}
+tr.row-outcome td {
+  color: #7f1d1d !important;
+}
+#giftCleanTable tbody tr.row-outcome:hover {
+  background-color: #fee2e2 !important;
+}
+
+/* 预警/过期行 */
+tr.row-warning {
+  background-color: #fff7ed !important;
+  border-left: 3px solid #f97316;
+}
+tr.row-warning td {
+  color: #9a3412 !important;
+  font-weight: 600;
+}
+tr.row-expired {
+  background-color: #fef2f2 !important;
+  border-left: 3px solid #dc2626;
+}
+tr.row-expired td {
+  color: #7f1d1d !important;
+  font-weight: 600;
+}
+
+/* ---------- 滚动条美化 ---------- */
+.table-responsive::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+.table-responsive::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+.table-responsive::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #d0d5dd 0%, #b0b8c4 100%);
+  border-radius: 3px;
+}
+.table-responsive::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #b0b8c4 0%, #9099a8 100%);
+}
+
+/* ---------- 徽章样式 ---------- */
+.badge {
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+/* ---------- CSV格式代码块 ---------- */
+.card-body code {
+  background: linear-gradient(135deg, #f8f9fa 0%, #eef0f3 100%);
+  color: #c0392b;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #e8ecf1;
+}
+
+/* ---------- 收支查询面板 ---------- */
+.query-result-box {
+  background: linear-gradient(135deg, #fafbfc 0%, #f5f6f9 100%);
+  border-radius: var(--radius-sm);
+  min-height: 120px;
+  border: 1px solid #eef0f2;
+  transition: all var(--transition);
+}
+
+.query-result-box:hover {
+  border-color: #e0e3e8;
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.03);
+}
+
+.query-result-box .table-borderless td,
+.query-result-box .table-borderless th {
+  padding: 5px 10px;
+  vertical-align: middle;
+}
+
+.query-result-box .table-borderless thead th {
+  font-weight: 700;
+  font-size: 0.73rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #8e9bae;
+}
+
+.query-result-box .table-responsive::-webkit-scrollbar {
+  width: 4px;
+}
+.query-result-box .table-responsive::-webkit-scrollbar-thumb {
+  background: #ccd3dd;
+  border-radius: 2px;
+}
+
+/* ---------- 筛选区域 ---------- */
+#moduleAccounting .card .input-group-text {
+  background: #fafbfc;
+  border-color: #dee2e6;
+  border-radius: 6px 0 0 6px;
+}
+
+/* ---------- 预警面板 ---------- */
+#docAlertPanel {
+  border-left: 5px solid #dc3545 !important;
+  animation: pulse-border 2s ease-in-out infinite;
+}
+
+@keyframes pulse-border {
+  0%, 100% { border-left-color: #dc3545; }
+  50% { border-left-color: #f8a5a5; }
+}
+
+#docAlertPanel .card-header {
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%) !important;
+}
+
+/* ---------- 文件上传美化 ---------- */
+input[type="file"].form-control-sm {
+  cursor: pointer;
+  border: 1.5px dashed #d0d5dd !important;
+  background: linear-gradient(135deg, #fafbfc 0%, #f5f6f8 100%);
+  transition: all var(--transition);
+  padding: 6px 10px;
+}
+
+input[type="file"].form-control-sm:hover {
+  border-color: var(--primary-red) !important;
+  background: linear-gradient(135deg, #fef5f4 0%, #fdf2f2 100%);
+}
+
+#moduleDocuments input[type="file"].form-control-sm:hover {
+  border-color: var(--primary-blue) !important;
+  background: linear-gradient(135deg, #f0f8ff 0%, #e8f4fd 100%);
+}
+
+/* ---------- 输入组美化 ---------- */
+.input-group-text {
+  border-radius: 6px 0 0 6px !important;
+  border-color: #dee2e6;
+}
+
+.input-group .form-control {
+  border-radius: 0 6px 6px 0 !important;
+}
+
+/* ---------- 响应式 ---------- */
+@media (max-width: 991.98px) {
+  .navbar-brand {
+    font-size: 0.95rem !important;
+  }
+  .card-header {
+    font-size: 0.85rem;
+    padding: 10px 14px !important;
+  }
+  .navbar-nav .nav-link {
+    padding: 6px 12px;
+    font-size: 0.82rem;
+  }
+  #statsSummaryCard .badge {
+    font-size: 0.72rem;
+    padding: 4px 10px;
+  }
+}
+
+/* ---------- 工具提示/加载动画 ---------- */
+#giftUploadStatus,
+#docUploadStatus {
+  transition: all var(--transition);
+}
+
+/* 空状态美化 */
+td.text-center.text-muted {
+  font-style: italic;
+  color: #adb5bd !important;
+}
+
+/* ---------- 数据总览标题 ---------- */
+#statsSummaryCard .fw-bold {
+  font-size: 0.88rem;
+  letter-spacing: 0.5px;
+}

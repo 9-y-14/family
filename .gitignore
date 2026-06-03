@@ -1,0 +1,27 @@
+# 操作系统文件
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 运行时生成数据
+data/
+
+# 依赖
+node_modules/
+
+# 环境变量
+.env
+
+# 日志
+*.log
+npm-debug.log*
+
+# 临时文件
+*.tmp
+*.temp

@@ -1,0 +1,1364 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>家庭全能管家：记账·证件·心愿·沟通综合管理平台</title>
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <!-- 自定义样式 -->
+  <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+
+  <!-- ==================== 顶部导航栏 ==================== -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-gradient shadow-sm sticky-top">
+    <div class="container">
+      <a class="navbar-brand fw-bold fs-5" href="#">
+        <i class="bi bi-house-heart-fill me-2"></i>家庭全能管家
+      </a>
+      <span class="navbar-text text-white-50 small d-none d-lg-inline me-auto ms-2" style="font-size:0.7rem;">
+        记账·证件·心愿·沟通 综合管理平台
+      </span>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="mainNav">
+        <ul class="navbar-nav ms-auto flex-row gap-1">
+          <li class="nav-item">
+            <a class="nav-link active fw-bold" href="#" data-zone="safety" id="navSafety">
+              <i class="bi bi-shield-check me-1"></i>居家安全资产台账区
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link fw-bold" href="#" data-zone="growth" id="navGrowth">
+              <i class="bi bi-heart-pulse me-1"></i>家庭温情成长互动区
+            </a>
+          </li>
+        </ul>
+        <span class="navbar-text ms-3 text-white-50 small d-none d-lg-inline">
+          <i class="bi bi-database me-1"></i>纯前端 · 本地处理 · 数据不上传
+        </span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ==================== 分区1：居家安全资产台账区 ==================== -->
+  <div id="zoneSafety" class="zone-container container-fluid px-4 py-4">
+
+    <!-- 分区标题 -->
+    <div class="zone-header mb-4">
+      <div class="d-flex align-items-center gap-3">
+        <div class="zone-icon-box bg-danger bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width:50px;height:50px;">
+          <i class="bi bi-shield-check text-danger fs-4"></i>
+        </div>
+        <div>
+          <h4 class="fw-bold mb-0 text-danger">居家安全资产台账区</h4>
+          <small class="text-muted">人情往来 · 证件保单 · 家庭药品</small>
+        </div>
+        <div class="ms-auto">
+          <span class="badge bg-light text-muted border" style="font-size:0.72rem;">
+            <i class="bi bi-info-circle me-1"></i>全部数据本地存储，安全无忧
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 分区内子模块Tab导航 -->
+    <ul class="nav nav-pills nav-fill mb-4" id="safetySubTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active sub-tab-link" data-bs-toggle="tab" data-bs-target="#subTabAccounting" type="button" role="tab">
+          <i class="bi bi-gift-fill me-1"></i>人情往来记账台账
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link sub-tab-link" data-bs-toggle="tab" data-bs-target="#subTabDocuments" type="button" role="tab">
+          <i class="bi bi-file-earmark-check-fill me-1"></i>证件&保单到期提醒
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+            <button class="nav-link sub-tab-link" data-bs-toggle="tab" data-bs-target="#subTabEmergency" type="button" role="tab">
+              <i class="bi bi-capsule me-1"></i>家庭药品检查表
+            </button>
+      </li>
+    </ul>
+
+    <!-- 子Tab内容区 -->
+    <div class="tab-content" id="safetySubTabContent">
+
+      <!-- ===== 子Tab1：人情往来记账台账 ===== -->
+      <div class="tab-pane fade show active" id="subTabAccounting" role="tabpanel">
+        <!-- 第1区：说明 + CSV上传 + 手动录入 -->
+        <div class="row g-3 mb-4">
+          <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-header bg-white border-bottom fw-bold text-danger">
+                <i class="bi bi-info-circle-fill me-2"></i>模块简介
+              </div>
+              <div class="card-body small">
+                <p class="mb-0">本模块用于家庭人情往来账单的统计与分析，涵盖<strong>送礼（支出）</strong>与<strong>收礼（收入）</strong>双向记录。支持CSV批量导入与手动录入。系统自动清洗异常数据（剔除空值、负金额、错误日期），通过图表直观展示年度、月度、地区、事件类型、收支对比等多维度礼金往来情况，所有数据仅在浏览器本地处理，安全无忧。</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-header bg-white border-bottom fw-bold text-danger">
+                <i class="bi bi-cloud-upload-fill me-2"></i>CSV数据导入
+              </div>
+              <div class="card-body">
+                <label for="csvGiftInput" class="form-label small fw-bold">选择CSV文件（UTF-8编码）</label>
+                <input class="form-control form-control-sm mb-2" type="file" id="csvGiftInput" accept=".csv">
+                <div class="mb-2 p-2 bg-light rounded small">
+                  <p class="mb-1 fw-bold text-secondary">CSV格式要求：</p>
+                  <code class="d-block text-wrap" style="font-size:0.7rem;line-height:1.6;">
+                    日期,往来对象,事件类型,收支类型,金额,所在地区,备注<br>
+                    2024-01-15,张三,喜事,支出,500,北京,同事结婚<br>
+                    2024-03-20,李四,喜事,收入,2000,上海,好友随礼
+                  </code>
+                  <p class="mb-0 mt-1 text-muted" style="font-size:0.7rem;">事件类型：喜事 / 白事 / 节日送礼　|　收支类型：支出 / 收入</p>
+                </div>
+                <div class="d-flex gap-2">
+                  <button class="btn btn-danger btn-sm" id="btnGiftDemo">
+                    <i class="bi bi-lightning-fill me-1"></i>加载示例数据
+                  </button>
+                  <button class="btn btn-outline-danger btn-sm" id="btnGiftClear">
+                    <i class="bi bi-trash-fill me-1"></i>清空全部
+                  </button>
+                </div>
+                <div class="mt-2 small text-muted" id="giftUploadStatus">
+                  <i class="bi bi-info-circle me-1"></i>尚未导入数据
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-header bg-white border-bottom fw-bold text-danger">
+                <i class="bi bi-plus-circle-fill me-2"></i>手动添加账单
+              </div>
+              <div class="card-body">
+                <form id="formGiftAdd" autocomplete="off">
+                  <div class="row g-2">
+                    <div class="col-4">
+                      <label class="form-label small mb-1">日期 <span class="text-danger">*</span></label>
+                      <input type="date" class="form-control form-control-sm" id="giftDate" required>
+                    </div>
+                    <div class="col-4">
+                      <label class="form-label small mb-1">收支类型 <span class="text-danger">*</span></label>
+                      <select class="form-select form-select-sm" id="giftDirection" required>
+                        <option value="支出">支出（送礼）</option>
+                        <option value="收入">收入（收礼）</option>
+                      </select>
+                    </div>
+                    <div class="col-4">
+                      <label class="form-label small mb-1">往来对象 <span class="text-danger">*</span></label>
+                      <input type="text" class="form-control form-control-sm" id="giftName" placeholder="如：张三" list="giftNameList" required>
+                      <datalist id="giftNameList"></datalist>
+                    </div>
+                    <div class="col-4">
+                      <label class="form-label small mb-1">事件类型 <span class="text-danger">*</span></label>
+                      <select class="form-select form-select-sm" id="giftType" required>
+                        <option value="喜事">喜事</option>
+                        <option value="白事">白事</option>
+                        <option value="节日送礼">节日送礼</option>
+                      </select>
+                    </div>
+                    <div class="col-4">
+                      <label class="form-label small mb-1">金额 <span class="text-danger">*</span></label>
+                      <input type="number" class="form-control form-control-sm" id="giftAmount" placeholder="元" min="0" step="0.01" required>
+                    </div>
+                    <div class="col-4">
+                      <label class="form-label small mb-1">所在地区 <span class="text-muted fw-normal">(选填)</span></label>
+                      <input type="text" class="form-control form-control-sm" id="giftRegion" placeholder="如：北京" list="giftRegionList">
+                      <datalist id="giftRegionList"></datalist>
+                    </div>
+                    <div class="col-8">
+                      <label class="form-label small mb-1">备注 <span class="text-muted fw-normal">(选填)</span></label>
+                      <input type="text" class="form-control form-control-sm" id="giftNote" placeholder="可选">
+                    </div>
+                    <div class="col-4 d-flex align-items-end">
+                      <button type="submit" class="btn btn-danger btn-sm w-100" id="btnGiftAdd">
+                        <i class="bi bi-check-lg me-1"></i>添加
+                      </button>
+                    </div>
+                  </div>
+                  <div class="mt-2 text-muted" style="font-size:0.7rem;">
+                    <i class="bi bi-lightbulb me-1"></i>快捷录入：添加后仅清空对象和金额，日期/类型/地区保持不变，方便连续录入
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 第2区：收支查询面板 -->
+        <div class="row g-3 mb-4">
+          <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+              <div class="card-header bg-white border-bottom fw-bold text-danger">
+                <i class="bi bi-calculator-fill me-2"></i>月度收支查询
+              </div>
+              <div class="card-body">
+                <div class="row g-2 align-items-end mb-3">
+                  <div class="col-auto">
+                    <label class="form-label small mb-1 fw-bold">选择年份</label>
+                    <select class="form-select form-select-sm" id="queryMonthYear" style="min-width:100px;">
+                      <option value="">--选择年份--</option>
+                    </select>
+                  </div>
+                  <div class="col-auto">
+                    <label class="form-label small mb-1 fw-bold">选择月份</label>
+                    <select class="form-select form-select-sm" id="queryMonthMonth" style="min-width:90px;">
+                      <option value="all">全年</option>
+                      <option value="1">1月</option><option value="2">2月</option><option value="3">3月</option>
+                      <option value="4">4月</option><option value="5">5月</option><option value="6">6月</option>
+                      <option value="7">7月</option><option value="8">8月</option><option value="9">9月</option>
+                      <option value="10">10月</option><option value="11">11月</option><option value="12">12月</option>
+                    </select>
+                  </div>
+                  <div class="col-auto">
+                    <button class="btn btn-danger btn-sm" id="btnQueryMonth">
+                      <i class="bi bi-search me-1"></i>查询
+                    </button>
+                  </div>
+                </div>
+                <div id="queryMonthResult" class="query-result-box p-3 rounded bg-light">
+                  <div class="text-center text-muted small py-3">
+                    <i class="bi bi-arrow-up-circle me-1"></i>请选择年份和月份后点击查询
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+              <div class="card-header bg-white border-bottom fw-bold text-danger">
+                <i class="bi bi-cash-stack me-2"></i>年度收支总览
+              </div>
+              <div class="card-body">
+                <div class="row g-2 align-items-end mb-3">
+                  <div class="col-auto">
+                    <label class="form-label small mb-1 fw-bold">选择年份</label>
+                    <select class="form-select form-select-sm" id="queryYearYear" style="min-width:100px;">
+                      <option value="all">全部年份</option>
+                    </select>
+                  </div>
+                  <div class="col-auto">
+                    <button class="btn btn-danger btn-sm" id="btnQueryYear">
+                      <i class="bi bi-search me-1"></i>查询
+                    </button>
+                  </div>
+                </div>
+                <div id="queryYearResult" class="query-result-box p-3 rounded bg-light">
+                  <div class="text-center text-muted small py-3">
+                    <i class="bi bi-arrow-up-circle me-1"></i>请选择年份后点击查询
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 统计汇总条 -->
+        <div class="card border-0 shadow-sm mb-4" id="statsSummaryCard">
+          <div class="card-body py-3">
+            <div class="d-flex align-items-center flex-wrap gap-3">
+              <span class="fw-bold text-muted small text-uppercase" style="letter-spacing:1px;font-size:0.72rem;">
+                <i class="bi bi-bar-chart-fill me-1"></i>数据总览
+              </span>
+              <span class="badge bg-dark bg-opacity-75" id="giftTotalRecords" style="font-size:0.8rem;padding:6px 14px;">📋 总记录：0条</span>
+              <span class="badge bg-danger" id="giftOutAmount" style="font-size:0.8rem;padding:6px 14px;">📤 总支出：¥0.00</span>
+              <span class="badge bg-success" id="giftInAmount" style="font-size:0.8rem;padding:6px 14px;">📥 总收入：¥0.00</span>
+              <span class="badge bg-info text-dark" id="giftNetAmount" style="font-size:0.8rem;padding:6px 14px;">💰 净收支：¥0.00</span>
+              <span class="ms-auto text-muted small" style="font-size:0.75rem;">
+                <i class="bi bi-funnel me-1"></i><span id="giftFilterSummary">全部数据</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 数据筛选 -->
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-white border-bottom fw-bold text-danger py-2 d-flex align-items-center">
+            <i class="bi bi-funnel-fill me-2"></i>数据筛选与明细
+            <span class="ms-2 text-muted small fw-normal" style="font-size:0.7rem;">筛选后直接查看下方结果</span>
+          </div>
+          <div class="card-body py-2">
+            <div class="row align-items-center g-2">
+              <div class="col-auto">
+                <label class="form-label small mb-0 text-muted" style="font-size:0.68rem;">年份</label>
+                <select class="form-select form-select-sm" id="giftFilterYear"><option value="all">全部年份</option></select>
+              </div>
+              <div class="col-auto">
+                <label class="form-label small mb-0 text-muted" style="font-size:0.68rem;">事件类型</label>
+                <select class="form-select form-select-sm" id="giftFilterType">
+                  <option value="all">全部事件类型</option>
+                  <option value="喜事">喜事</option>
+                  <option value="白事">白事</option>
+                  <option value="节日送礼">节日送礼</option>
+                </select>
+              </div>
+              <div class="col-auto">
+                <label class="form-label small mb-0 text-muted" style="font-size:0.68rem;">收支</label>
+                <select class="form-select form-select-sm" id="giftFilterDirection">
+                  <option value="all">全部收支</option>
+                  <option value="支出">支出</option>
+                  <option value="收入">收入</option>
+                </select>
+              </div>
+              <div class="col-auto">
+                <label class="form-label small mb-0 text-muted" style="font-size:0.68rem;">搜索</label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text"><i class="bi bi-search"></i></span>
+                  <input type="text" class="form-control" id="giftFilterKeyword" placeholder="人名/地区/备注..." style="min-width:150px;">
+                </div>
+              </div>
+              <div class="col-auto d-flex align-items-end">
+                <button class="btn btn-outline-danger btn-sm" id="btnGiftReset"><i class="bi bi-arrow-repeat me-1"></i>重置筛选</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 原始/清洗数据表 -->
+        <div class="row g-3 mb-4">
+          <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+              <div class="card-header bg-white border-bottom fw-bold text-secondary d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-table me-2"></i>原始导入数据</span>
+                <span class="badge bg-secondary" id="giftRawCount">0条</span>
+              </div>
+              <div class="card-body p-0">
+                <div class="table-responsive" style="max-height:350px;overflow-y:auto;">
+                  <table class="table table-sm table-hover mb-0" id="giftRawTable">
+                    <thead class="table-light sticky-top">
+                      <tr><th>日期</th><th>往来对象</th><th>事件类型</th><th>收支类型</th><th>金额</th><th>所在地区</th><th>备注</th></tr>
+                    </thead>
+                    <tbody id="giftRawBody">
+                      <tr><td colspan="7" class="text-center text-muted py-3">暂无数据</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+              <div class="card-header bg-white border-bottom fw-bold text-success d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-check2-square me-2"></i>清洗后合规数据</span>
+                <span class="badge bg-success" id="giftCleanCount">0条</span>
+              </div>
+              <div class="card-body p-0">
+                <div class="table-responsive" style="max-height:350px;overflow-y:auto;">
+                  <table class="table table-sm table-hover mb-0" id="giftCleanTable">
+                    <thead class="table-light sticky-top">
+                      <tr><th>日期</th><th>往来对象</th><th>事件类型</th><th>收支类型</th><th>金额</th><th>所在地区</th><th>备注</th><th class="th-action" style="width:50px;">操作</th></tr>
+                    </thead>
+                    <tbody id="giftCleanBody">
+                      <tr><td colspan="8" class="text-center text-muted py-3">暂无数据</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ECharts图表 -->
+        <div class="row g-3">
+          <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+              <div class="card-header bg-white border-bottom fw-bold text-danger"><i class="bi bi-graph-up me-2"></i>月度花销走势</div>
+              <div class="card-body p-2"><div id="chartGiftMonthly" style="height:380px;"></div></div>
+            </div>
+          </div>
+          <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+              <div class="card-header bg-white border-bottom fw-bold text-danger"><i class="bi bi-pie-chart-fill me-2"></i>事件类型开销占比</div>
+              <div class="card-body p-2"><div id="chartGiftPie" style="height:380px;"></div></div>
+            </div>
+          </div>
+          <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+              <div class="card-header bg-white border-bottom fw-bold text-danger"><i class="bi bi-bar-chart-fill me-2"></i>各地区礼金花费排行</div>
+              <div class="card-body p-2"><div id="chartGiftRegion" style="height:380px;"></div></div>
+            </div>
+          </div>
+          <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+              <div class="card-header bg-white border-bottom fw-bold text-danger"><i class="bi bi-bar-chart-steps me-2"></i>四季收支对比</div>
+              <div class="card-body p-2"><div id="chartGiftSeason" style="height:380px;"></div></div>
+            </div>
+          </div>
+          <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+              <div class="card-header bg-white border-bottom fw-bold text-danger"><i class="bi bi-arrow-left-right me-2"></i>月度收支对比</div>
+              <div class="card-body p-2"><div id="chartGiftInOut" style="height:380px;"></div></div>
+            </div>
+          </div>
+          <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+              <div class="card-header bg-white border-bottom fw-bold text-danger"><i class="bi bi-pie-chart-fill me-2"></i>收支类型占比</div>
+              <div class="card-body p-2"><div id="chartGiftDirectionPie" style="height:380px;"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== 子Tab2：证件&保单有效期管理 ===== -->
+      <div class="tab-pane fade" id="subTabDocuments" role="tabpanel">
+        <!-- 第1区：说明 + CSV导入 + 手动新增 -->
+        <div class="row g-3 mb-4">
+          <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-header bg-white border-bottom fw-bold text-primary">
+                <i class="bi bi-info-circle-fill me-2"></i>模块简介
+              </div>
+              <div class="card-body small">
+                <p class="mb-0">本模块用于追踪家庭重要证件与保单的有效期，支持CSV批量导入与手动新增。系统自动清洗脏数据、规整日期格式、计算剩余有效天数。每项记录可<strong>独立设置预警天数</strong>，到期前自动标红提醒，助您及时续期换证，避免失效风险。</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-header bg-white border-bottom fw-bold text-primary">
+                <i class="bi bi-cloud-upload-fill me-2"></i>CSV数据导入
+              </div>
+              <div class="card-body">
+                <label for="csvDocInput" class="form-label small fw-bold">选择CSV文件（UTF-8编码）</label>
+                <input class="form-control form-control-sm mb-2" type="file" id="csvDocInput" accept=".csv">
+                <div class="mb-2 p-2 bg-light rounded small">
+                  <p class="mb-1 fw-bold text-secondary">CSV格式要求：</p>
+                  <code class="d-block text-wrap" style="font-size:0.7rem;line-height:1.6;">
+                    登记日期,证件/保单名称,证件类型,保管位置,生效日期,到期日期,备注,预警天数<br>
+                    2023-01-01,身份证-张三,身份证件,书房抽屉,2023-01-01,2033-01-01,长期有效,365
+                  </code>
+                  <p class="mb-0 mt-1 text-muted" style="font-size:0.7rem;">预警天数为可选列，不填则默认90天。每条记录可独立设置预警天数。</p>
+                  <p class="mb-0 mt-1 text-muted" style="font-size:0.7rem;">证件类型：身份证件 / 房产证明 / 驾驶证件 / 医疗保险 / 人寿保险 / 车辆保险</p>
+                </div>
+                <div class="d-flex gap-2">
+                  <button class="btn btn-primary btn-sm" id="btnDocDemo">
+                    <i class="bi bi-lightning-fill me-1"></i>加载示例数据
+                  </button>
+                  <button class="btn btn-outline-primary btn-sm" id="btnDocClear">
+                    <i class="bi bi-trash-fill me-1"></i>清空全部
+                  </button>
+                </div>
+                <div class="mt-2 small text-muted" id="docUploadStatus">
+                  <i class="bi bi-info-circle me-1"></i>尚未导入数据
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-header bg-white border-bottom fw-bold text-primary">
+                <i class="bi bi-plus-circle-fill me-2"></i>手动新增证件/保单
+              </div>
+              <div class="card-body">
+                <form id="formDocAdd" autocomplete="off">
+                  <div class="row g-2">
+                    <div class="col-6">
+                      <label class="form-label small mb-1">登记日期</label>
+                      <input type="date" class="form-control form-control-sm" id="docRegDate" required>
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label small mb-1">证件/保单名称</label>
+                      <input type="text" class="form-control form-control-sm" id="docName" placeholder="如：身份证-张三" required>
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label small mb-1">证件类型</label>
+                      <select class="form-select form-select-sm" id="docType" required>
+                        <option value="身份证件">身份证件</option>
+                        <option value="房产证明">房产证明</option>
+                        <option value="驾驶证件">驾驶证件</option>
+                        <option value="医疗保险">医疗保险</option>
+                        <option value="人寿保险">人寿保险</option>
+                        <option value="车辆保险">车辆保险</option>
+                      </select>
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label small mb-1">保管位置</label>
+                      <input type="text" class="form-control form-control-sm" id="docLocation" placeholder="如：书房抽屉">
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label small mb-1">生效日期</label>
+                      <input type="date" class="form-control form-control-sm" id="docStartDate" required>
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label small mb-1">到期日期</label>
+                      <input type="date" class="form-control form-control-sm" id="docEndDate" required>
+                    </div>
+                    <div class="col-4">
+                      <label class="form-label small mb-1">预警天数</label>
+                      <input type="number" class="form-control form-control-sm" id="docWarningDaysAdd" value="90" min="1" max="3650" title="到期前多少天开始预警">
+                    </div>
+                    <div class="col-4">
+                      <label class="form-label small mb-1">备注</label>
+                      <input type="text" class="form-control form-control-sm" id="docNote" placeholder="可选">
+                    </div>
+                    <div class="col-4 d-flex align-items-end">
+                      <button type="submit" class="btn btn-primary btn-sm w-100" id="btnDocAdd">
+                        <i class="bi bi-check-lg me-1"></i>新增
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 预警面板 -->
+        <div class="card border-0 shadow-sm mb-4 border-start border-danger border-4" id="docAlertPanel" style="display:none;">
+          <div class="card-header bg-danger bg-opacity-10 border-bottom fw-bold text-danger d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-exclamation-triangle-fill me-2"></i>即将到期预警</span>
+            <div class="d-flex align-items-center gap-2">
+              <span class="badge bg-danger" id="docAlertCount">0项</span>
+            </div>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive" style="max-height:300px;overflow-y:auto;">
+              <table class="table table-sm table-hover mb-0">
+                <thead class="table-danger sticky-top">
+                  <tr><th>名称</th><th>类型</th><th>保管位置</th><th>到期日期</th><th>预警天数</th><th>剩余天数</th><th>备注</th><th>操作</th></tr>
+                </thead>
+                <tbody id="docAlertBody">
+                  <tr><td colspan="8" class="text-center text-muted py-2">暂无即将到期的证件或保单 ✓</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- 筛选 -->
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-white border-bottom fw-bold text-primary py-2 d-flex align-items-center">
+            <i class="bi bi-funnel-fill me-2"></i>数据筛选与明细
+            <span class="ms-2 text-muted small fw-normal" style="font-size:0.7rem;">筛选后直接查看下方结果</span>
+          </div>
+          <div class="card-body py-2">
+            <div class="row align-items-center g-2">
+              <div class="col-auto">
+                <label class="form-label small mb-0 text-muted" style="font-size:0.68rem;">证件类型</label>
+                <select class="form-select form-select-sm" id="docFilterType">
+                  <option value="all">全部证件类型</option>
+                  <option value="身份证件">身份证件</option>
+                  <option value="房产证明">房产证明</option>
+                  <option value="驾驶证件">驾驶证件</option>
+                  <option value="医疗保险">医疗保险</option>
+                  <option value="人寿保险">人寿保险</option>
+                  <option value="车辆保险">车辆保险</option>
+                </select>
+              </div>
+              <div class="col-auto">
+                <label class="form-label small mb-0 text-muted" style="font-size:0.68rem;">状态</label>
+                <select class="form-select form-select-sm" id="docFilterStatus">
+                  <option value="all">全部状态</option>
+                  <option value="warning">即将到期（≤90天）</option>
+                  <option value="normal">正常</option>
+                  <option value="expired">已过期</option>
+                </select>
+              </div>
+              <div class="col-auto">
+                <label class="form-label small mb-0 text-muted" style="font-size:0.68rem;">搜索</label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text"><i class="bi bi-search"></i></span>
+                  <input type="text" class="form-control" id="docFilterKeyword" placeholder="名称/位置/备注..." style="min-width:140px;">
+                </div>
+              </div>
+              <div class="col-auto d-flex align-items-end">
+                <button class="btn btn-outline-primary btn-sm" id="btnDocReset"><i class="bi bi-arrow-repeat me-1"></i>重置筛选</button>
+              </div>
+              <div class="col-auto ms-auto">
+                <span class="badge bg-primary bg-opacity-75" id="docTotalRecords" style="font-size:0.8rem;padding:5px 12px;">📁 总数量：0项</span>
+                <span class="badge bg-success ms-1" id="docNormalCount" style="font-size:0.8rem;padding:5px 12px;">✅ 正常：0</span>
+                <span class="badge bg-warning text-dark ms-1" id="docWarningCount" style="font-size:0.8rem;padding:5px 12px;">⚠️ 预警：0</span>
+                <span class="badge bg-danger ms-1" id="docExpiredCount" style="font-size:0.8rem;padding:5px 12px;">❌ 已过期：0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 数据表 -->
+        <div class="row g-3 mb-4">
+          <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+              <div class="card-header bg-white border-bottom fw-bold text-secondary d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-table me-2"></i>原始导入数据</span>
+                <span class="badge bg-secondary" id="docRawCount">0条</span>
+              </div>
+              <div class="card-body p-0">
+                <div class="table-responsive" style="max-height:350px;overflow-y:auto;">
+                  <table class="table table-sm table-hover mb-0" id="docRawTable">
+                    <thead class="table-light sticky-top">
+                      <tr><th>登记日期</th><th>名称</th><th>类型</th><th>保管位置</th><th>生效日期</th><th>到期日期</th><th>备注</th></tr>
+                    </thead>
+                    <tbody id="docRawBody">
+                      <tr><td colspan="7" class="text-center text-muted py-3">暂无数据</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+              <div class="card-header bg-white border-bottom fw-bold text-success d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-check2-square me-2"></i>清洗后合规数据</span>
+                <span class="badge bg-success" id="docCleanCount">0条</span>
+              </div>
+              <div class="card-body p-0">
+                <div class="table-responsive" style="max-height:350px;overflow-y:auto;">
+                  <table class="table table-sm table-hover mb-0" id="docCleanTable">
+                    <thead class="table-light sticky-top">
+                      <tr><th>登记日期</th><th>名称</th><th>类型</th><th>保管位置</th><th>生效日期</th><th>到期日期</th><th>预警天数</th><th>剩余天数</th><th>备注</th><th>操作</th></tr>
+                    </thead>
+                    <tbody id="docCleanBody">
+                      <tr><td colspan="10" class="text-center text-muted py-3">暂无数据</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ECharts图表 -->
+        <div class="row g-3">
+          <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+              <div class="card-header bg-white border-bottom fw-bold text-primary"><i class="bi bi-pie-chart-fill me-2"></i>证件类型数量分布</div>
+              <div class="card-body p-2"><div id="chartDocPie" style="height:380px;"></div></div>
+            </div>
+          </div>
+          <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+              <div class="card-header bg-white border-bottom fw-bold text-primary"><i class="bi bi-bar-chart-fill me-2"></i>到期月份分布</div>
+              <div class="card-body p-2"><div id="chartDocExpiryMonth" style="height:380px;"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 修改证件弹窗 -->
+        <div class="modal fade" id="modalEditDoc" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <div class="modal-header" style="background:linear-gradient(135deg,#e3f2fd,#bbdefb);">
+                <h6 class="modal-title fw-bold text-primary"><i class="bi bi-pencil-square me-2"></i>修改证件/保单信息</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                <form id="formDocEdit" autocomplete="off">
+                  <input type="hidden" id="editDocIdx">
+                  <div class="row g-2">
+                    <div class="col-6">
+                      <label class="form-label small mb-1">登记日期</label>
+                      <input type="date" class="form-control form-control-sm" id="editDocRegDate" required>
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label small mb-1">证件/保单名称</label>
+                      <input type="text" class="form-control form-control-sm" id="editDocName" placeholder="如：身份证-张三" required>
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label small mb-1">证件类型</label>
+                      <select class="form-select form-select-sm" id="editDocType" required>
+                        <option value="身份证件">身份证件</option>
+                        <option value="房产证明">房产证明</option>
+                        <option value="驾驶证件">驾驶证件</option>
+                        <option value="医疗保险">医疗保险</option>
+                        <option value="人寿保险">人寿保险</option>
+                        <option value="车辆保险">车辆保险</option>
+                      </select>
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label small mb-1">保管位置</label>
+                      <input type="text" class="form-control form-control-sm" id="editDocLocation" placeholder="如：书房抽屉">
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label small mb-1">生效日期</label>
+                      <input type="date" class="form-control form-control-sm" id="editDocStartDate" required>
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label small mb-1">到期日期</label>
+                      <input type="date" class="form-control form-control-sm" id="editDocEndDate" required>
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label small mb-1">预警天数</label>
+                      <input type="number" class="form-control form-control-sm" id="editDocWarningDays" value="90" min="1" max="3650" title="到期前多少天开始预警">
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label small mb-1">备注</label>
+                      <input type="text" class="form-control form-control-sm" id="editDocNote" placeholder="可选">
+                    </div>
+                  </div>
+                </form>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-sm btn-primary" id="btnSaveDocEdit"><i class="bi bi-check-lg me-1"></i>保存修改</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== 子Tab3：家庭药品检查表 ===== -->
+      <div class="tab-pane fade" id="subTabEmergency" role="tabpanel">
+        <!-- 模块简介 + 添加药品 -->
+        <div class="row g-3 mb-4">
+          <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-header bg-white border-bottom fw-bold text-warning">
+                <i class="bi bi-info-circle-fill me-2"></i>模块简介
+              </div>
+              <div class="card-body small">
+                <p class="mb-0">本模块用于管理家庭常备药品。记录感冒药、退烧药、消炎药、消化药、抗过敏药、外用药等药品的采购与保质信息。<strong class="text-warning">每半年自动提醒全量盘点核查</strong>，并自动生成药品缺口采购清单。支持药品名称搜索，避免因忘记家中已有药品而重复购买。</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-header bg-white border-bottom fw-bold text-warning">
+                <i class="bi bi-plus-circle-fill me-2"></i>添加药品
+              </div>
+              <div class="card-body">
+                <form id="formEmergencyAdd" autocomplete="off">
+                  <div class="row g-2">
+                    <div class="col-6">
+                      <label class="form-label small mb-1">药品名称 <span class="text-danger">*</span></label>
+                      <input type="text" class="form-control form-control-sm" id="emItemName" placeholder="如：布洛芬" list="emItemList" required>
+                      <datalist id="emItemList">
+                        <option value="布洛芬"><option value="对乙酰氨基酚"><option value="阿莫西林">
+                        <option value="头孢克肟"><option value="阿奇霉素"><option value="左氧氟沙星">
+                        <option value="感冒灵颗粒"><option value="连花清瘟胶囊"><option value="氨溴索口服液">
+                        <option value="蒙脱石散"><option value="奥美拉唑"><option value="健胃消食片">
+                        <option value="氯雷他定"><option value="西替利嗪"><option value="扑尔敏">
+                        <option value="创可贴"><option value="碘伏消毒液"><option value="云南白药喷雾剂">
+                        <option value="红霉素软膏"><option value="电子体温计"><option value="医用口罩">
+                        <option value="硝苯地平缓释片"><option value="二甲双胍"><option value="速效救心丸">
+                      </datalist>
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label small mb-1">规格型号</label>
+                      <input type="text" class="form-control form-control-sm" id="emSpec" placeholder="如：0.3g×24片">
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label small mb-1">采购日期 <span class="text-danger">*</span></label>
+                      <input type="date" class="form-control form-control-sm" id="emPurchaseDate" required>
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label small mb-1">保质截止日期</label>
+                      <input type="date" class="form-control form-control-sm" id="emExpiryDate">
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label small mb-1">上次检查日期</label>
+                      <input type="date" class="form-control form-control-sm" id="emLastCheckDate">
+                    </div>
+                    <div class="col-6 d-flex align-items-end">
+                      <button type="submit" class="btn btn-warning btn-sm w-100" id="btnEmergencyAdd">
+                        <i class="bi bi-check-lg me-1"></i>添加药品
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-header bg-white border-bottom fw-bold text-warning d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-calendar-check me-2"></i>盘点提醒倒计时</span>
+                <span class="badge bg-warning text-dark" id="emNextCheckBadge">计算中...</span>
+              </div>
+              <div class="card-body text-center py-4">
+                <div class="display-6 fw-bold text-warning mb-2" id="emCheckCountdown">--</div>
+                <div class="text-muted small mb-3">距离下次半年盘点</div>
+                <button class="btn btn-outline-warning btn-sm" id="btnEmCheckNow">
+                  <i class="bi bi-clipboard-check me-1"></i>立即盘点核查
+                </button>
+                <div class="mt-3 small text-muted" id="emShortageAlert" style="display:none;">
+                  <i class="bi bi-exclamation-triangle-fill text-warning me-1"></i>
+                  <span id="emShortageText"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 搜索框 -->
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-body py-2">
+            <div class="row align-items-center g-2">
+              <div class="col-auto">
+                <label class="form-label small mb-0 text-muted" style="font-size:0.68rem;"><i class="bi bi-search me-1"></i>搜索药品</label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text"><i class="bi bi-search"></i></span>
+                  <input type="text" class="form-control" id="emSearchKeyword" placeholder="输入药品名称搜索..." style="min-width:250px;" list="emSearchList">
+                  <datalist id="emSearchList"></datalist>
+                </div>
+              </div>
+              <div class="col-auto d-flex align-items-end">
+                <button class="btn btn-outline-warning btn-sm" id="btnEmSearchReset">
+                  <i class="bi bi-arrow-repeat me-1"></i>显示全部
+                </button>
+              </div>
+              <div class="col-auto ms-auto">
+                <span class="badge bg-warning text-dark" id="emSearchResultInfo" style="font-size:0.78rem;padding:5px 12px;display:none;"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 药品表格 + 药品缺口清单 -->
+        <div class="row g-3 mb-4">
+          <div class="col-lg-7">
+            <div class="card border-0 shadow-sm">
+              <div class="card-header bg-white border-bottom fw-bold text-warning d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-capsule me-2"></i>家庭药品清单</span>
+                <span class="badge bg-warning text-dark" id="emItemCount">0项</span>
+              </div>
+              <div class="card-body p-0">
+                <div class="em-table-scroll" style="overflow-x:auto;max-height:400px;overflow-y:auto;">
+                  <table class="table table-sm table-hover mb-0" id="emItemsTable" style="min-width:650px;">
+                    <thead class="table-light sticky-top">
+                      <tr><th>药品名称</th><th>规格</th><th>采购日期</th><th>保质截止</th><th>上次检查</th><th>状态</th><th>操作</th></tr>
+                    </thead>
+                    <tbody id="emItemsBody">
+                      <tr><td colspan="7" class="text-center text-muted py-3">暂无药品，请添加</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-5">
+            <div class="card border-0 shadow-sm" id="emShortageCard" style="display:none;">
+              <div class="card-header bg-white border-bottom fw-bold text-danger">
+                <i class="bi bi-cart-x me-2"></i>药品缺口采购清单
+              </div>
+              <div class="card-body p-0">
+                <div class="em-table-scroll" style="overflow-x:auto;max-height:400px;overflow-y:auto;">
+                  <table class="table table-sm table-hover mb-0" style="min-width:450px;">
+                    <thead class="table-danger sticky-top">
+                      <tr><th>药品名称</th><th>原因</th><th>建议采购量</th></tr>
+                    </thead>
+                    <tbody id="emShortageBody">
+                      <tr><td colspan="3" class="text-center text-muted py-2">暂无药品缺口</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /#safetySubTabContent -->
+  </div><!-- /#zoneSafety -->
+
+  <!-- ==================== 分区2：家庭温情成长互动区 ==================== -->
+  <div id="zoneGrowth" class="zone-container container-fluid px-4 py-4" style="display:none;">
+
+    <!-- 分区标题 -->
+    <div class="zone-header mb-4">
+      <div class="d-flex align-items-center gap-3">
+        <div class="zone-icon-box bg-pink bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width:50px;height:50px;">
+          <i class="bi bi-heart-pulse fs-4" style="color:#e91e63;"></i>
+        </div>
+        <div>
+          <h4 class="fw-bold mb-0" style="color:#e91e63;">家庭温情成长互动区</h4>
+          <small class="text-muted">批评转化器 · 心愿储蓄罐 · 种植争霸赛 · 沟通复盘</small>
+        </div>
+        <div class="ms-auto">
+          <span class="badge bg-light text-muted border" style="font-size:0.72rem;">
+            <i class="bi bi-heart me-1"></i>用爱沟通，一起成长
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 分区内子模块Tab导航 -->
+    <ul class="nav nav-pills nav-fill mb-4" id="growthSubTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active sub-tab-link" data-bs-toggle="tab" data-bs-target="#subTabComplaint" type="button" role="tab">
+          <i class="bi bi-heart-pulse-fill me-1"></i>家庭真心话 · 破冰站
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link sub-tab-link" data-bs-toggle="tab" data-bs-target="#subTabWish" type="button" role="tab">
+          <i class="bi bi-star-fill me-1"></i>心愿储蓄罐
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link sub-tab-link" data-bs-toggle="tab" data-bs-target="#subTabPlanting" type="button" role="tab">
+          <i class="bi bi-flower1 me-1"></i>阳台种植争霸赛
+        </button>
+      </li>
+    </ul>
+
+    <!-- 子Tab内容区 -->
+    <div class="tab-content" id="growthSubTabContent">
+
+      <!-- ===== 子Tab4：家庭真心话 · 破冰站 ===== -->
+      <div class="tab-pane fade show active" id="subTabComplaint" role="tabpanel">
+        <!-- 真心话录入 + 统计 -->
+        <div class="row g-3 mb-4">
+          <div class="col-lg-5">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-header bg-white border-bottom fw-bold" style="color:#e91e63;">
+                <i class="bi bi-heart-pulse-fill me-2"></i>家庭真心话 · 破冰站
+              </div>
+              <div class="card-body">
+                <div class="alert alert-pink mb-3 small" style="background:linear-gradient(135deg,#fce4ec,#f8bbd0);border:none;border-radius:8px;">
+                  <i class="bi bi-lightbulb-fill me-1"></i>
+                  <strong>破冰小贴士：</strong>有些话当面说不出口？写下来，让真心话代替争吵和冷战。<br>
+                  可以是<strong>道歉</strong>、<strong>委屈</strong>、<strong>感谢</strong>，或者只是<strong>想被理解</strong>的心情。
+                </div>
+                <form id="formComplaintAdd" autocomplete="off">
+                  <div class="mb-3">
+                    <label class="form-label small fw-bold">1. 我想说什么真心话？ <span class="text-danger">*</span></label>
+                    <textarea class="form-control form-control-sm" id="cpProblem" rows="2" placeholder="比如：上次那件事其实我挺委屈的 / 我想跟你道歉..." required></textarea>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label small fw-bold">2. 我希望怎样被回应？（可选）</label>
+                    <textarea class="form-control form-control-sm" id="cpRequest" rows="2" placeholder="比如：希望我们能坐下来聊聊 / 希望能得到一句理解的话..."></textarea>
+                  </div>
+                  <div class="row g-2">
+                    <div class="col-5">
+                      <label class="form-label small mb-1">来自</label>
+                      <input type="text" class="form-control form-control-sm" id="cpMember" placeholder="如：爸爸" list="cpMemberList">
+                      <datalist id="cpMemberList">
+                        <option value="爸爸"><option value="妈妈"><option value="儿子"><option value="女儿">
+                      </datalist>
+                    </div>
+                    <div class="col-3 d-flex align-items-end">
+                      <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="cpAnonymous">
+                        <label class="form-check-label small" for="cpAnonymous">匿名</label>
+                      </div>
+                    </div>
+                    <div class="col-4 d-flex align-items-end">
+                      <button type="submit" class="btn btn-sm w-100" style="background:linear-gradient(135deg,#e91e63,#c2185b);color:#fff;" id="btnComplaintAdd">
+                        <i class="bi bi-send-heart-fill me-1"></i>投递真心话
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-7">
+            <div class="card border-0 shadow-sm">
+              <div class="card-header bg-white border-bottom fw-bold" style="color:#e91e63;">
+                <i class="bi bi-bar-chart-line-fill me-2"></i>大家最在意的事
+              </div>
+              <div class="card-body p-0">
+                <div class="table-responsive" style="max-height:300px;overflow-y:auto;">
+                  <table class="table table-sm table-hover mb-0" id="cpRankTable">
+                    <thead class="table-light sticky-top">
+                      <tr><th>#</th><th>关键词</th><th>期待回应</th><th>来自</th><th>次数</th><th>状态</th></tr>
+                    </thead>
+                    <tbody id="cpRankBody">
+                      <tr><td colspan="6" class="text-center text-muted py-3">还没有真心话，做第一个勇敢的人吧</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 真心话列表 + 回应追踪 -->
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-white border-bottom fw-bold d-flex justify-content-between align-items-center" style="color:#e91e63;">
+            <span><i class="bi bi-envelope-heart-fill me-2"></i>全部真心话 & 回应状态</span>
+            <span class="badge" style="background:#e91e63;font-size:0.8rem;" id="cpTotalCount">0条</span>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive" style="max-height:450px;overflow-y:auto;">
+              <table class="table table-sm table-hover mb-0" id="cpListTable">
+                <thead class="table-light sticky-top">
+                  <tr><th>日期</th><th>真心话</th><th>期待回应</th><th>来自</th><th>回应状态</th><th>操作</th></tr>
+                </thead>
+                <tbody id="cpListBody">
+                  <tr><td colspan="6" class="text-center text-muted py-3">暂无记录</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== 子Tab5：心愿储蓄罐 ===== -->
+      <div class="tab-pane fade" id="subTabWish" role="tabpanel">
+        <!-- 心愿录入 + 本周落地心愿 -->
+        <div class="row g-3 mb-4">
+          <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-header bg-white border-bottom fw-bold" style="color:#ff9800;">
+                <i class="bi bi-star-fill me-2"></i>录入新心愿
+              </div>
+              <div class="card-body">
+                <form id="formWishAdd" autocomplete="off">
+                  <div class="mb-3">
+                    <label class="form-label small fw-bold">心愿内容 <span class="text-danger">*</span></label>
+                    <textarea class="form-control form-control-sm" id="wishContent" rows="2" placeholder="写下你的小心愿..." required></textarea>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label small fw-bold">提出家庭成员 <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control form-control-sm" id="wishMember" placeholder="如：女儿" list="wishMemberList" required>
+                    <datalist id="wishMemberList">
+                      <option value="爸爸"><option value="妈妈"><option value="儿子"><option value="女儿"><option value="全家">
+                    </datalist>
+                  </div>
+                  <div class="mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" id="wishAnonymous">
+                    <label class="form-check-label small text-muted" for="wishAnonymous">匿名提出（列表中显示为"匿名"）</label>
+                  </div>
+                  <button type="submit" class="btn btn-sm w-100" style="background:linear-gradient(135deg,#ff9800,#f57c00);color:#fff;" id="btnWishAdd">
+                    <i class="bi bi-plus-circle-fill me-1"></i>放入心愿罐
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100" style="background:linear-gradient(135deg,#fff8e1,#fff3e0);">
+              <div class="card-header bg-white border-bottom fw-bold text-warning d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-calendar-heart-fill me-2"></i>本周落地心愿</span>
+                <span class="badge bg-warning text-dark" id="wishWeekBadge">待抽取</span>
+              </div>
+              <div class="card-body text-center py-4">
+                <div class="fs-3 mb-3" id="wishWeekIcon">🎯</div>
+                <div class="fw-bold mb-1" id="wishWeekContent" style="color:#e65100;">--</div>
+                <div class="text-muted small mb-2" id="wishWeekMember">--</div>
+                <div class="text-muted small mb-3" id="wishWeekLikes">--</div>
+                <button class="btn btn-warning btn-sm" id="btnWishRandomPick">
+                  <i class="bi bi-shuffle me-1"></i>重新随机抽取
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-header bg-white border-bottom fw-bold" style="color:#ff9800;">
+                <i class="bi bi-clock-history me-2"></i>心愿统计
+              </div>
+              <div class="card-body">
+                <div class="row text-center g-2">
+                  <div class="col-6 mb-3">
+                    <div class="fs-4 fw-bold" style="color:#ff9800;" id="wishTotalCount">0</div>
+                    <div class="text-muted small">心愿总数</div>
+                  </div>
+                  <div class="col-6 mb-3">
+                    <div class="fs-4 fw-bold" style="color:#4caf50;" id="wishDoneCount">0</div>
+                    <div class="text-muted small">已完成</div>
+                  </div>
+                  <div class="col-6">
+                    <div class="fs-4 fw-bold" style="color:#e91e63;" id="wishLikeCount">0</div>
+                    <div class="text-muted small">总点赞数</div>
+                  </div>
+                  <div class="col-6">
+                    <div class="fs-4 fw-bold" style="color:#ff5722;" id="wishExpiredCount">0</div>
+                    <div class="text-muted small">超3月未完成</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 心愿列表 -->
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-white border-bottom fw-bold d-flex justify-content-between align-items-center" style="color:#ff9800;">
+            <span><i class="bi bi-journal-heart-fill me-2"></i>心愿储蓄罐</span>
+            <div>
+              <button class="btn btn-sm btn-outline-warning me-1" id="btnWishCheckExpired">
+                <i class="bi bi-exclamation-triangle me-1"></i>检查过期心愿
+              </button>
+            </div>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive" style="max-height:500px;overflow-y:auto;">
+              <table class="table table-sm table-hover mb-0" id="wishListTable">
+                <thead class="table-light sticky-top">
+                  <tr><th>日期</th><th>心愿内容</th><th>提出者</th><th>点赞</th><th>状态</th><th>操作</th></tr>
+                </thead>
+                <tbody id="wishListBody">
+                  <tr><td colspan="6" class="text-center text-muted py-3">心愿罐还是空的，快来放入第一个心愿吧</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- 心愿完成记录墙 -->
+        <div class="card border-0 shadow-sm">
+          <div class="card-header bg-white border-bottom fw-bold d-flex justify-content-between align-items-center" style="color:#4caf50;">
+            <span><i class="bi bi-images me-2"></i>心愿完成墙 <span class="badge bg-success ms-1" id="completedWishCountBadge">0</span></span>
+          </div>
+          <div class="card-body">
+            <div class="row g-3" id="completedWishWall">
+              <div class="col-12 text-center text-muted py-4">
+                <i class="bi bi-camera fs-1 d-block mb-2"></i>
+                还没有已完成的心愿记录<br>
+                <small>在心愿列表中点击"完成"并上传照片来记录美好瞬间</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 完成心愿弹窗（隐藏） -->
+        <div class="modal fade" id="modalCompleteWish" tabindex="-1">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <div class="modal-header" style="background:linear-gradient(135deg,#4caf50,#388e3c);color:#fff;">
+                <h6 class="modal-title"><i class="bi bi-check-circle-fill me-2"></i>完成心愿记录</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                <div class="mb-3">
+                  <label class="form-label small fw-bold">心愿内容</label>
+                  <div class="fw-bold text-success" id="modalCompleteWishContent">--</div>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label small fw-bold">完成日期</label>
+                  <input type="date" class="form-control form-control-sm" id="modalCompleteWishDate">
+                </div>
+                <div class="mb-3">
+                  <label class="form-label small fw-bold">完成感言</label>
+                  <textarea class="form-control form-control-sm" id="modalCompleteWishNote" rows="2" placeholder="记录完成心愿的美好瞬间..."></textarea>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label small fw-bold">上传纪念照片</label>
+                  <div class="wish-upload-area" id="wishUploadArea">
+                    <input type="file" accept="image/*" id="wishImageInput" style="display:none;">
+                    <div class="text-center py-3" id="wishUploadPlaceholder" style="cursor:pointer;">
+                      <i class="bi bi-cloud-arrow-up fs-3 text-muted d-block mb-1"></i>
+                      <small class="text-muted">点击或拖拽上传照片</small>
+                    </div>
+                    <div id="wishImagePreview" style="display:none;" class="text-center">
+                      <img id="wishImagePreviewImg" style="max-height:200px;max-width:100%;border-radius:8px;">
+                      <button type="button" class="btn btn-outline-danger btn-sm mt-2" id="btnRemoveWishImage">
+                        <i class="bi bi-trash3 me-1"></i>移除图片
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-success btn-sm" id="btnConfirmCompleteWish">
+                  <i class="bi bi-check-lg me-1"></i>确认完成
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ===== 子Tab6：阳台种植争霸赛（桌宠版） ===== -->
+      <div class="tab-pane fade" id="subTabPlanting" role="tabpanel">
+
+        <!-- 模块简介 -->
+        <div class="row g-3 mb-4">
+          <div class="col-12">
+            <div class="card border-0 shadow-sm pet-intro-card">
+              <div class="card-header bg-white border-bottom fw-bold" style="color:#4caf50;">
+                <i class="bi bi-flower1 me-2"></i>🌿 阳台种植争霸赛 · 玩法说明
+              </div>
+              <div class="card-body py-2 small">
+                <div class="row g-2">
+                  <div class="col-md-3"><i class="bi bi-1-circle-fill text-success me-1"></i> 种下植物，它会<strong>自动生长</strong>（每小时+1成长值）</div>
+                  <div class="col-md-3"><i class="bi bi-2-circle-fill text-success me-1"></i> 点击下方按钮<strong>照料</strong>它（浇水/施肥/晒太阳等）</div>
+                  <div class="col-md-3"><i class="bi bi-3-circle-fill text-success me-1"></i> 每周照料次数最多者当选<strong>最佳种植者</strong></div>
+                  <div class="col-md-3"><i class="bi bi-4-circle-fill text-success me-1"></i> 最佳种植者可<strong>抽取心愿储蓄罐</strong>中的心愿</div>
+                </div>
+                <div class="text-center mt-2">
+                  <span class="badge bg-success bg-opacity-10 text-success">🌱 种子 → 🌱 发芽 → 🪴 幼苗 → 🌿 成株 → 🌸 开花 → 🍎 结果</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 成员管理 + 种植物 -->
+        <div class="row g-3 mb-4">
+          <div class="col-lg-5">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-header bg-white border-bottom fw-bold" style="color:#4caf50;">
+                <i class="bi bi-people-fill me-2"></i>参赛家庭成员
+              </div>
+              <div class="card-body">
+                <div class="input-group input-group-sm mb-3">
+                  <input type="text" class="form-control" id="plantMemberName" placeholder="输入成员名称" list="plantMemberNameList">
+                  <datalist id="plantMemberNameList">
+                    <option value="爸爸"><option value="妈妈"><option value="儿子"><option value="女儿">
+                    <option value="爷爷"><option value="奶奶"><option value="外公"><option value="外婆">
+                  </datalist>
+                  <button class="btn btn-success" type="button" id="btnAddMember">
+                    <i class="bi bi-plus-lg"></i> 添加
+                  </button>
+                </div>
+                <div id="plantMemberList" class="mb-0">
+                  <div class="text-center text-muted py-2 small">暂无家庭成员</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-7">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-header bg-white border-bottom fw-bold" style="color:#4caf50;">
+                <i class="bi bi-plus-circle-fill me-2"></i>种下一棵新植物
+              </div>
+              <div class="card-body">
+                <form id="formPlantAdd" autocomplete="off">
+                  <div class="row g-2 align-items-end">
+                    <div class="col-md-3">
+                      <label class="form-label small mb-1">种植者 <span class="text-danger">*</span></label>
+                      <select class="form-select form-select-sm" id="plantMemberId" required>
+                        <option value="">--选择成员--</option>
+                      </select>
+                    </div>
+                    <div class="col-md-3">
+                      <label class="form-label small mb-1">植物名称 <span class="text-danger">*</span></label>
+                      <input type="text" class="form-control form-control-sm" id="plantName" placeholder="如：小番茄" required>
+                    </div>
+                    <div class="col-md-2">
+                      <label class="form-label small mb-1">类型</label>
+                      <select class="form-select form-select-sm" id="plantType">
+                        <option value="蔬菜">蔬菜</option>
+                        <option value="香草">香草</option>
+                        <option value="观赏">观赏</option>
+                        <option value="水果">水果</option>
+                        <option value="多肉">多肉</option>
+                        <option value="其他">其他</option>
+                      </select>
+                    </div>
+                    <div class="col-md-2">
+                      <label class="form-label small mb-1">种植日期</label>
+                      <input type="date" class="form-control form-control-sm" id="plantDate">
+                    </div>
+                    <div class="col-md-2">
+                      <button type="submit" class="btn btn-success btn-sm w-100">
+                        <i class="bi bi-check-lg me-1"></i>种下
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 🌟 桌宠植物卡片区 -->
+        <div class="card border-0 shadow-sm mb-4 pet-garden-card">
+          <div class="card-header bg-white border-bottom fw-bold d-flex justify-content-between align-items-center" style="color:#4caf50;">
+            <span><i class="bi bi-tree-fill me-2"></i>🌿 我的小花园</span>
+            <div class="d-flex align-items-center gap-2">
+              <label class="form-label small mb-0 text-muted">筛选成员：</label>
+              <select class="form-select form-select-sm" id="plantFilterMember" style="min-width:130px;">
+                <option value="all">全部成员</option>
+              </select>
+            </div>
+          </div>
+          <div class="card-body" style="background:linear-gradient(180deg, #f9fef9 0%, #e8f5e9 50%, #c8e6c9 100%);min-height:200px;">
+            <div class="row g-3" id="plantCards">
+              <div class="col-12 text-center text-muted py-4">🌿 还没有植物，快种下第一棵吧！</div>
+            </div>
+          </div>
+          <div class="card-footer bg-white border-top text-center py-2">
+            <small class="text-muted">
+              💡 植物会<strong>自动生长</strong>（每小时+1），点击照料按钮加速成长 · 同一种照料<strong>1小时内</strong>只能做一次
+            </small>
+          </div>
+        </div>
+
+        <!-- 排行榜 + 最佳种植者 -->
+        <div class="row g-3 mb-4">
+          <div class="col-lg-7">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-header bg-white border-bottom fw-bold d-flex justify-content-between align-items-center" style="color:#4caf50;">
+                <span><i class="bi bi-trophy-fill me-2"></i>本周照料排行榜 <small class="text-muted fw-normal" id="weekLabel"></small></span>
+                <button class="btn btn-outline-secondary btn-sm" id="btnResetWeek" title="手动重置本周">
+                  <i class="bi bi-arrow-repeat me-1"></i>重置本周
+                </button>
+              </div>
+              <div class="card-body p-0">
+                <div class="table-responsive" style="max-height:320px;overflow-y:auto;">
+                  <table class="table table-sm table-hover mb-0" id="rankingTable">
+                    <thead class="table-light sticky-top">
+                      <tr><th style="width:60px;">排名</th><th>成员</th><th>植物数</th><th>本周照料</th><th>总成长值</th></tr>
+                    </thead>
+                    <tbody id="rankingBody">
+                      <tr><td colspan="5" class="text-center text-muted py-3">本周还没有人照料植物，快来互动吧！</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-5">
+            <div class="card border-0 shadow-sm h-100" id="bestGrowerPanel" style="background:linear-gradient(135deg,#fffde7,#fff8e1);">
+              <div class="card-header bg-white border-bottom fw-bold" style="color:#ff9800;">
+                <i class="bi bi-award-fill me-2"></i>本周最佳种植者
+              </div>
+              <div class="card-body text-center py-3">
+                <div class="fs-1 mb-2" id="bgAvatar">🏆</div>
+                <h5 class="fw-bold mb-1" id="bgName" style="color:#e65100;">--</h5>
+                <div class="small text-muted mb-2" id="bgScore">--</div>
+                <div class="p-2 rounded mb-3" style="background:rgba(255,152,0,0.1);">
+                  <div class="small text-muted">🎯 抽中的心愿</div>
+                  <div class="fw-bold" id="bgWish" style="color:#e65100;">--</div>
+                </div>
+                <button class="btn btn-sm btn-warning w-100" id="btnDrawWish" disabled>
+                  <i class="bi bi-gift-fill me-1"></i>为最佳种植者抽取心愿
+                </button>
+                <div class="small text-muted mt-2">仅本周照料第一名可抽取 · 每周限一次</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 已领取心愿记录 -->
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-white border-bottom fw-bold d-flex justify-content-between align-items-center" style="color:#ff9800;">
+            <span><i class="bi bi-journal-check me-2"></i>已领取的心愿记录</span>
+            <span class="badge bg-warning text-dark" id="claimedWishCount">--</span>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive" style="max-height:250px;overflow-y:auto;">
+              <table class="table table-sm table-hover mb-0">
+                <thead class="table-light sticky-top">
+                  <tr><th>领取日期</th><th>最佳种植者</th><th>心愿内容</th></tr>
+                </thead>
+                <tbody id="claimedWishBody">
+                  <tr><td colspan="3" class="text-center text-muted py-2 small">暂无已领取的心愿记录</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /#subTabPlanting -->
+
+    </div><!-- /#growthSubTabContent -->
+  </div><!-- /#zoneGrowth -->
+
+  <!-- ==================== JS 依赖库 ==================== -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+  <!-- 业务逻辑 -->
+  <script src="js/accounting.js"></script>
+  <script src="js/documents.js"></script>
+  <script src="js/emergency.js"></script>
+  <script src="js/growth.js"></script>
+  <script src="js/planting.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
