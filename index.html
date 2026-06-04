@@ -1267,6 +1267,21 @@
                 <i class="bi bi-people-fill me-2"></i>参赛家庭成员
               </div>
               <div class="card-body">
+                <!-- 已登录：云端同步按钮 -->
+                <div id="plantSyncLoggedIn" class="mb-2 d-none">
+                  <button class="btn btn-outline-success btn-sm w-100" type="button" id="btnSyncFromCloud">
+                    <i class="bi bi-cloud-download me-1"></i>从云端家庭导入成员
+                  </button>
+                </div>
+                <!-- 未登录：引导提示 -->
+                <div id="plantSyncGuest" class="mb-2">
+                  <div class="alert alert-success py-1 px-2 mb-0 small" style="font-size:0.75rem;">
+                    <i class="bi bi-info-circle me-1"></i>
+                    登录后可同步家庭真实成员 —
+                    <a href="#" class="alert-link fw-bold" id="linkPlantToRegister">创建家庭</a> /
+                    <a href="#" class="alert-link fw-bold" id="linkPlantToJoin">加入家庭</a>
+                  </div>
+                </div>
                 <div class="input-group input-group-sm mb-3">
                   <input type="text" class="form-control" id="plantMemberName" placeholder="输入成员名称" list="plantMemberNameList">
                   <datalist id="plantMemberNameList">

@@ -656,6 +656,87 @@ function renderAllPlanting() {
   renderClaimedWishes();
 }
 
+/* ---------- 云端成员同步 ---------- */
+async function syncPlantMembersFromCloud() {
+  if (typeof FamilyAuth === 'undefined' || !FamilyAuth.isLoggedIn()) return;
+  if (!FamilyAuth.isManager() && !FamilyAuth.isMember()) return;
+
+  const r = await FamilyAuth.getMembers();
+  if (!r.ok || !r.members || r.members.length === 0) {
+    console.log('[种植争霸] 云端无成员数据，跳过同步');
+    return;
+  }
+
+  const avatars = ['👨', '👩', '👦', '👧', '👴', '👵'];
+  let addedCount = 0;
+
+  r.members.forEach(m => {
+    // 用云端成员ID去重：在 plantMembers 中查找是否已有该云端ID
+    const cloudId = 'cloud_' + m.id;
+    const exists = plantMembers.some(pm => pm.cloudId === cloudId);
+    if (exists) return;
+
+    // 检查是否有同名成员（避免一人两号）
+    const nameExists = plantMembers.some(pm => pm.name === (m.displayName || m.username));
+    if (nameExists) return;
+
+    const avatar = avatars[Math.floor(Math.random() * avatars.length)];
+    plantMembers.push({
+      id: 'm' + Date.now() + '_' + addedCount,
+      cloudId: cloudId,
+      name: m.displayName || m.username,
+      avatar: avatar
+    });
+    addedCount++;
+  });
+
+  if (addedCount > 0) {
+    savePlantMembers();
+    renderAllPlanting();
+    if (typeof FamilyAuth !== 'undefined' && typeof FamilyAuth.showToast === 'function') {
+      FamilyAuth.showToast(`已从云端导入 ${addedCount} 位家庭成员`, 'success');
+    }
+    console.log(`[种植争霸] 从云端同步了 ${addedCount} 位成员`);
+  }
+}
+
+function updatePlantSyncUI() {
+  const loggedInEl = document.getElementById('plantSyncLoggedIn');
+  const guestEl = document.getElementById('plantSyncGuest');
+
+  if (typeof FamilyAuth === 'undefined' || !FamilyAuth.isLoggedIn()) {
+    if (loggedInEl) loggedInEl.classList.add('d-none');
+    if (guestEl) guestEl.classList.remove('d-none');
+  } else {
+    if (loggedInEl) loggedInEl.classList.remove('d-none');
+    if (guestEl) guestEl.classList.add('d-none');
+  }
+}
+
+function removePlantMemberByCloudId(cloudUserId) {
+  const cloudId = 'cloud_' + cloudUserId;
+  const removed = plantMembers.filter(m => m.cloudId === cloudId);
+  if (removed.length === 0) return;
+
+  removed.forEach(member => {
+    // 清理该成员的相关数据
+    if (typeof WishJar !== 'undefined') {
+      WishJar.reloadFromStorage();
+      WishJar.deleteByPlantMember(member.id, member.name);
+    }
+    plants = plants.filter(p => p.memberId !== member.id);
+    delete plantWeekCareCounts[member.id];
+    if (plantWeekDraw && plantWeekDraw.bestMemberId === member.id) plantWeekDraw = null;
+  });
+
+  plantMembers = plantMembers.filter(m => m.cloudId !== cloudId);
+  savePlantMembers();
+  savePlants();
+  savePlantWeek();
+  renderAllPlanting();
+  console.log(`[种植争霸] 已移除云端成员对应参赛者: ${removed.map(r => r.name).join(', ')}`);
+}
+
 /* ---------- 事件绑定 ---------- */
 function bindPlantingEvents() {
   document.getElementById('btnAddMember').addEventListener('click', addPlantMember);
@@ -674,7 +755,33 @@ function bindPlantingEvents() {
 
   document.getElementById('btnDrawWish').addEventListener('click', drawWishForBest);
   document.getElementById('btnResetWeek').addEventListener('click', resetPlantWeek);
+
+  // 云端同步按钮
+  document.getElementById('btnSyncFromCloud')?.addEventListener('click', syncPlantMembersFromCloud);
+
+  // 未登录引导：点击创建家庭
+  document.getElementById('linkPlantToRegister')?.addEventListener('click', e => {
+    e.preventDefault();
+    if (typeof FamilyAuth !== 'undefined') {
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('modalRegister')).show();
+    }
+  });
+
+  // 未登录引导：点击加入家庭
+  document.getElementById('linkPlantToJoin')?.addEventListener('click', e => {
+    e.preventDefault();
+    if (typeof FamilyAuth !== 'undefined') {
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('modalJoin')).show();
+    }
+  });
 }
+
+// 暴露给 family-auth 调用（登录/移除时联动）
+window.PlantingModule = {
+  syncFromCloud: syncPlantMembersFromCloud,
+  updateSyncUI: updatePlantSyncUI,
+  removeByCloudId: removePlantMemberByCloudId
+};
 
 /* ---------- 定时自动增长 ---------- */
 let plantGrowthInterval = null;
@@ -706,5 +813,6 @@ function initPlantingModule() {
   loadPlantData();
   bindPlantingEvents();
   renderAllPlanting();
+  updatePlantSyncUI();
   startPlantAutoGrowth();
 }

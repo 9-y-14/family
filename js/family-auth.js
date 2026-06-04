@@ -174,6 +174,10 @@ const FamilyAuth = (function () {
     resetModuleFlags();
     reloadAllModules();
     FamilySync.startPolling();
+    // 登录后自动将云端家庭成员导入种植争霸赛参赛列表
+    if (typeof window !== 'undefined' && window.PlantingModule?.syncFromCloud) {
+      setTimeout(() => window.PlantingModule.syncFromCloud(), 500);
+    }
     if (isManager()) {
       showManagerVerifyModal(() => {
         switchZoneForAuth('safety');
@@ -260,6 +264,10 @@ const FamilyAuth = (function () {
         safetyBadge.innerHTML = isMember()
           ? '<i class="bi bi-shield-x me-1"></i>台账区对普通成员不可见'
           : '<i class="bi bi-shield-lock me-1"></i>真实家庭台账 · 需管理者认证访问';
+      }
+      // 同步种植争霸赛的云端导入 UI 状态
+      if (typeof window !== 'undefined' && window.PlantingModule?.updateSyncUI) {
+        window.PlantingModule.updateSyncUI();
       }
     } else {
       guest.classList.remove('d-none');
@@ -616,6 +624,10 @@ const FamilyAuth = (function () {
         document.getElementById('memberRemoveConfirm').classList.add('d-none');
         document.getElementById('formRemoveMember')?.reset();
         showToast(r.message, 'success');
+        // 联动清理种植争霸赛中的该成员
+        if (typeof window !== 'undefined' && window.PlantingModule?.removeByCloudId) {
+          window.PlantingModule.removeByCloudId(targetId);
+        }
         await refreshMemberList();
       } else {
         if (err) { err.textContent = r.error; err.classList.remove('d-none'); }
