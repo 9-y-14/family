@@ -90,15 +90,14 @@ async function registerManager(request, env) {
   const pinHash = await hashSecret(String(managerPin));
   const passHash = await hashSecret(password);
 
-  await env.DB.batch([
-    env.DB.prepare(
-      'INSERT INTO families (id, name, invite_code, manager_pin_hash, created_at) VALUES (?, ?, ?, ?, ?)'
-    ).bind(familyId, familyName.trim(), inviteCode, pinHash, now),
-    env.DB.prepare(
-      'INSERT INTO users (id, family_id, username, password_hash, role, display_name, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
-    ).bind(userId, familyId, username.trim(), passHash, 'manager', (displayName || username).trim(), now),
-    env.DB.prepare('INSERT INTO family_data (family_id, payload, updated_at) VALUES (?, ?, ?)').bind(familyId, '{}', now)
-  ]);
+  await env.DB.prepare(
+    'INSERT INTO families (id, name, invite_code, manager_pin_hash, created_at) VALUES (?, ?, ?, ?, ?)'
+  ).bind(familyId, familyName.trim(), inviteCode, pinHash, now).run();
+  await env.DB.prepare(
+    'INSERT INTO users (id, family_id, username, password_hash, role, display_name, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  ).bind(userId, familyId, username.trim(), passHash, 'manager', (displayName || username).trim(), now).run();
+  await env.DB.prepare('INSERT INTO family_data (family_id, payload, updated_at) VALUES (?, ?, ?)')
+    .bind(familyId, '{}', now).run();
 
   const token = await signToken({ sub: userId, role: 'manager', fid: familyId }, env);
   return json({
