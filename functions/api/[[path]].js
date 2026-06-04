@@ -99,62 +99,26 @@ async function registerManager(request, env) {
     return json({ error: '密码至少 6 位' }, 400);
   }
 
-  try {
-    const existing = await env.DB.prepare('SELECT id FROM users WHERE username = ?').bind(username.trim()).first();
-    if (existing) return json({ error: '用户名已被使用' }, 409);
-  } catch (e) {
-    return json({ error: 'DB查询失败: ' + (e.message || String(e)), detail: e.stack || '' }, 500);
-  }
+  const existing = await env.DB.prepare('SELECT id FROM users WHERE username = ?').bind(username.trim()).first();
+  if (existing) return json({ error: '用户名已被使用' }, 409);
 
-  let familyId, userId;
-  try {
-    familyId = crypto.randomUUID();
-    userId = crypto.randomUUID();
-  } catch (e) {
-    return json({ error: 'crypto.randomUUID失败: ' + (e.message || String(e)) }, 500);
-  }
-
+  const familyId = crypto.randomUUID();
+  const userId = crypto.randomUUID();
   const inviteCode = generateInviteCode();
   const now = Date.now();
+  const pinHash = await hashSecret(String(managerPin));
+  const passHash = await hashSecret(password);
 
-  let pinHash, passHash;
-  try {
-    pinHash = await hashSecret(String(managerPin));
-    passHash = await hashSecret(password);
-  } catch (e) {
-    return json({ error: '密码哈希失败: ' + (e.message || String(e)), detail: e.stack || '' }, 500);
-  }
+  await env.DB.prepare(
+    'INSERT INTO families (id, name, invite_code, manager_pin_hash, created_at) VALUES (?, ?, ?, ?, ?)'
+  ).bind(familyId, familyName.trim(), inviteCode, pinHash, now).run();
+  await env.DB.prepare(
+    'INSERT INTO users (id, family_id, username, password_hash, role, display_name, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  ).bind(userId, familyId, username.trim(), passHash, 'manager', (displayName || username).trim(), now).run();
+  await env.DB.prepare('INSERT INTO family_data (family_id, payload, updated_at) VALUES (?, ?, ?)')
+    .bind(familyId, '{}', now).run();
 
-  try {
-    await env.DB.prepare(
-      'INSERT INTO families (id, name, invite_code, manager_pin_hash, created_at) VALUES (?, ?, ?, ?, ?)'
-    ).bind(familyId, familyName.trim(), inviteCode, pinHash, now).run();
-  } catch (e) {
-    return json({ error: '插入families失败: ' + (e.message || String(e)), detail: e.stack || '' }, 500);
-  }
-
-  try {
-    await env.DB.prepare(
-      'INSERT INTO users (id, family_id, username, password_hash, role, display_name, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
-    ).bind(userId, familyId, username.trim(), passHash, 'manager', (displayName || username).trim(), now).run();
-  } catch (e) {
-    return json({ error: '插入users失败: ' + (e.message || String(e)), detail: e.stack || '' }, 500);
-  }
-
-  try {
-    await env.DB.prepare('INSERT INTO family_data (family_id, payload, updated_at) VALUES (?, ?, ?)')
-      .bind(familyId, '{}', now).run();
-  } catch (e) {
-    return json({ error: '插入family_data失败: ' + (e.message || String(e)), detail: e.stack || '' }, 500);
-  }
-
-  let token;
-  try {
-    token = await signToken({ sub: userId, role: 'manager', fid: familyId }, env);
-  } catch (e) {
-    return json({ error: 'JWT签名失败: ' + (e.message || String(e)), detail: e.stack || '' }, 500);
-  }
-
+  const token = await signToken({ sub: userId, role: 'manager', fid: familyId }, env);
   return json({
     token,
     inviteCode,
@@ -359,8 +323,7 @@ async function authenticateManager(request, env) {
 
 async function hashSecret(text) {
   const salt = crypto.getRandomValues(new Uint8Array(16));
-  const key = await deriveKey(text, salt);
-  const hash = await crypto.subtle.exportKey('raw', key);
+  const hash = await pbkdf2(text, salt);
   return `pbkdf2:${bufToB64(salt)}:${bufToB64(new Uint8Array(hash))}`;
 }
 
@@ -369,23 +332,21 @@ async function verifySecret(text, stored) {
   if (parts[0] !== 'pbkdf2' || parts.length !== 3) return false;
   const salt = b64ToBuf(parts[1]);
   const expected = b64ToBuf(parts[2]);
-  const key = await deriveKey(text, salt);
-  const hash = new Uint8Array(await crypto.subtle.exportKey('raw', key));
+  const hash = new Uint8Array(await pbkdf2(text, salt));
   if (hash.length !== expected.length) return false;
   let diff = 0;
   for (let i = 0; i < hash.length; i++) diff |= hash[i] ^ expected[i];
   return diff === 0;
 }
 
-async function deriveKey(password, salt) {
+async function pbkdf2(password, salt) {
   const enc = new TextEncoder();
   const baseKey = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveBits']);
-  const bits = await crypto.subtle.deriveBits(
+  return crypto.subtle.deriveBits(
     { name: 'PBKDF2', salt, iterations: PBKDF2_ITERATIONS, hash: 'SHA-256' },
     baseKey,
     256
   );
-  return crypto.subtle.importKey('raw', bits, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
 }
 
 async function signToken(payload, env, ttl = TOKEN_TTL_SEC) {
