@@ -51,6 +51,9 @@
           <button type="button" class="btn btn-outline-warning btn-sm d-none" id="btnManagerReauth" title="重新验证管理者身份">
             <i class="bi bi-shield-lock"></i>
           </button>
+          <button type="button" class="btn btn-outline-info btn-sm d-none" id="btnShowInviteCode" title="查看邀请码">
+            <i class="bi bi-link-45deg"></i>
+          </button>
           <button type="button" class="btn btn-outline-light btn-sm" id="btnLogout">
             <i class="bi bi-box-arrow-right"></i>
           </button>
@@ -1441,6 +1444,9 @@
           <div class="text-center mt-3 small">
             <a href="#" id="linkToJoinFromLogin">有邀请码？加入已有家庭</a>
           </div>
+          <div class="text-center mt-1 small">
+            <a href="#" id="linkToForgotPassword" class="text-warning">忘记密码？</a>
+          </div>
         </div>
       </div>
     </div>
@@ -1502,6 +1508,7 @@
             <div class="mb-2">
               <label class="form-label small fw-bold">家庭邀请码</label>
               <input type="text" class="form-control form-control-sm text-uppercase" id="joinInviteCode" placeholder="8位邀请码" required>
+              <div class="form-text" style="font-size:0.68rem;">忘记邀请码？请联系家庭管理者获取</div>
             </div>
             <div class="mb-2">
               <label class="form-label small fw-bold">您的称呼</label>
@@ -1551,6 +1558,77 @@
           <p class="small text-muted">请将以下邀请码分享给家人，他们可加入您的家庭：</p>
           <div class="display-6 fw-bold text-primary letter-spacing-wide py-3" id="inviteCodeDisplay">--------</div>
           <p class="small text-muted mb-0">普通成员加入后仅可使用「家庭温情成长互动区」</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 忘记密码弹窗 -->
+  <div class="modal fade" id="modalForgotPassword" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold"><i class="bi bi-key me-2"></i>重置密码</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="small text-muted">输入用户名和<strong>管理者验证码</strong>（家庭创建时设置的）来重置密码。管理者验证码是家庭的恢复密钥。</p>
+          <div class="alert alert-danger small d-none" id="forgotPasswordError"></div>
+          <div class="alert alert-success small d-none" id="forgotPasswordSuccess"></div>
+          <form id="formForgotPassword" autocomplete="off">
+            <div class="mb-2">
+              <label class="form-label small fw-bold">用户名</label>
+              <input type="text" class="form-control form-control-sm" id="fpUsername" required>
+            </div>
+            <div class="mb-2">
+              <label class="form-label small fw-bold">管理者验证码</label>
+              <input type="password" class="form-control form-control-sm" id="fpManagerPin" required autocomplete="off">
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-bold">新密码（至少6位）</label>
+              <input type="password" class="form-control form-control-sm" id="fpNewPassword" minlength="6" required autocomplete="new-password">
+            </div>
+            <button type="submit" class="btn btn-warning w-100" id="btnForgotPasswordSubmit">重置密码</button>
+          </form>
+          <div class="text-center mt-2">
+            <a href="#" id="linkBackToLoginFromFP" class="small">返回登录</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 邀请码管理弹窗（管理者查看/重设） -->
+  <div class="modal fade" id="modalInviteCodeManage" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold"><i class="bi bi-link-45deg me-2"></i>家庭邀请码</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body text-center">
+          <div class="alert alert-danger small d-none" id="inviteCodeManageError"></div>
+          <p class="small text-muted">当前家庭邀请码，分享给家人即可加入：</p>
+          <div class="display-6 fw-bold text-primary letter-spacing-wide py-3" id="inviteCodeManageDisplay">--------</div>
+          <p class="small text-muted" id="inviteCodeFamilyName"></p>
+          <div class="d-flex justify-content-center gap-2">
+            <button class="btn btn-outline-primary btn-sm" id="btnCopyInviteCode">
+              <i class="bi bi-clipboard me-1"></i>复制邀请码
+            </button>
+            <button class="btn btn-outline-danger btn-sm" id="btnRegenerateInvite">
+              <i class="bi bi-arrow-repeat me-1"></i>重设邀请码
+            </button>
+          </div>
+          <div class="mt-3 p-2 bg-light rounded small text-muted d-none" id="inviteCodeReauthBox">
+            <form id="formReauthInvite" autocomplete="off" class="d-flex gap-2 align-items-end justify-content-center">
+              <div>
+                <label class="form-label small mb-1">管理者验证码</label>
+                <input type="password" class="form-control form-control-sm" id="inviteReauthPin" placeholder="验证码" required autocomplete="off" style="width:140px;">
+              </div>
+              <button type="submit" class="btn btn-danger btn-sm">确认重设</button>
+              <button type="button" class="btn btn-outline-secondary btn-sm" id="btnCancelReauthInvite">取消</button>
+            </form>
+          </div>
         </div>
       </div>
     </div>

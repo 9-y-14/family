@@ -119,6 +119,26 @@ const FamilyAuth = (function () {
     return { ok: true };
   }
 
+  async function forgotPassword(username, managerPin, newPassword) {
+    const online = await checkApi();
+    if (!online) return { ok: false, error: '无法连接服务器' };
+    const { ok, data } = await apiPost('/auth/reset-password', { username, managerPin, newPassword });
+    if (!ok) return { ok: false, error: data.error || '重置失败' };
+    return { ok: true, message: data.message, familyName: data.familyName, role: data.role };
+  }
+
+  async function getInviteCode() {
+    const { ok, data } = await apiPost('/auth/invite-code', {});
+    if (!ok) return { ok: false, error: data.error || '获取失败' };
+    return { ok: true, inviteCode: data.inviteCode, familyName: data.familyName };
+  }
+
+  async function regenerateInviteCode(managerPin) {
+    const { ok, data } = await apiPost('/auth/invite-code', { managerPin, action: 'regenerate' });
+    if (!ok) return { ok: false, error: data.error || '重设失败' };
+    return { ok: true, inviteCode: data.inviteCode, familyName: data.familyName };
+  }
+
   async function onLoginSuccess(data) {
     FamilySync.clearManagerUnlock();
     saveSession({ token: data.token, user: data.user });
@@ -194,6 +214,11 @@ const FamilyAuth = (function () {
       if (reauth) {
         if (isManager()) reauth.classList.remove('d-none');
         else reauth.classList.add('d-none');
+      }
+      const inviteBtn = document.getElementById('btnShowInviteCode');
+      if (inviteBtn) {
+        if (isManager()) inviteBtn.classList.remove('d-none');
+        else inviteBtn.classList.add('d-none');
       }
       if (hint) {
         hint.innerHTML = isMember()
@@ -404,6 +429,106 @@ const FamilyAuth = (function () {
       bootstrap.Modal.getOrCreateInstance(document.getElementById('modalJoin')).show();
     });
 
+    // 忘记密码
+    document.getElementById('linkToForgotPassword')?.addEventListener('click', e => {
+      e.preventDefault();
+      bootstrap.Modal.getInstance(document.getElementById('modalLogin'))?.hide();
+      const err = document.getElementById('forgotPasswordError');
+      const success = document.getElementById('forgotPasswordSuccess');
+      const form = document.getElementById('formForgotPassword');
+      if (err) err.classList.add('d-none');
+      if (success) success.classList.add('d-none');
+      if (form) form.style.display = '';
+      document.getElementById('fpUsername').value = '';
+      document.getElementById('fpManagerPin').value = '';
+      document.getElementById('fpNewPassword').value = '';
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('modalForgotPassword')).show();
+    });
+
+    document.getElementById('linkBackToLoginFromFP')?.addEventListener('click', e => {
+      e.preventDefault();
+      bootstrap.Modal.getInstance(document.getElementById('modalForgotPassword'))?.hide();
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('modalLogin')).show();
+    });
+
+    document.getElementById('formForgotPassword')?.addEventListener('submit', async e => {
+      e.preventDefault();
+      const btn = document.getElementById('btnForgotPasswordSubmit');
+      const err = document.getElementById('forgotPasswordError');
+      const success = document.getElementById('forgotPasswordSuccess');
+      err.classList.add('d-none');
+      success.classList.add('d-none');
+      btn.disabled = true;
+      const r = await forgotPassword(
+        document.getElementById('fpUsername').value.trim(),
+        document.getElementById('fpManagerPin').value,
+        document.getElementById('fpNewPassword').value
+      );
+      btn.disabled = false;
+      if (r.ok) {
+        success.innerHTML = `<i class="bi bi-check-circle me-1"></i>${r.message}（家庭：${r.familyName}）<br><small>请使用新密码登录</small>`;
+        success.classList.remove('d-none');
+        document.getElementById('formForgotPassword').style.display = 'none';
+      } else {
+        err.textContent = r.error;
+        err.classList.remove('d-none');
+      }
+    });
+
+    // 邀请码管理
+    document.getElementById('btnShowInviteCode')?.addEventListener('click', async () => {
+      const err = document.getElementById('inviteCodeManageError');
+      if (err) err.classList.add('d-none');
+      document.getElementById('inviteCodeManageDisplay').textContent = '加载中...';
+      document.getElementById('inviteCodeFamilyName').textContent = '';
+      document.getElementById('inviteCodeReauthBox').classList.add('d-none');
+      document.getElementById('formReauthInvite')?.reset();
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('modalInviteCodeManage')).show();
+      const r = await getInviteCode();
+      if (r.ok) {
+        document.getElementById('inviteCodeManageDisplay').textContent = r.inviteCode;
+        document.getElementById('inviteCodeFamilyName').textContent = '家庭：' + r.familyName;
+      } else {
+        document.getElementById('inviteCodeManageDisplay').textContent = '获取失败';
+        if (err) { err.textContent = r.error; err.classList.remove('d-none'); }
+      }
+    });
+
+    document.getElementById('btnCopyInviteCode')?.addEventListener('click', () => {
+      const code = document.getElementById('inviteCodeManageDisplay').textContent;
+      if (code && code !== '--------' && code !== '获取失败' && code !== '加载中...') {
+        navigator.clipboard.writeText(code).then(() => {
+          showToast('邀请码已复制到剪贴板', 'success');
+        });
+      }
+    });
+
+    document.getElementById('btnRegenerateInvite')?.addEventListener('click', () => {
+      document.getElementById('inviteCodeReauthBox').classList.remove('d-none');
+      document.getElementById('inviteCodeManageError')?.classList.add('d-none');
+    });
+
+    document.getElementById('btnCancelReauthInvite')?.addEventListener('click', () => {
+      document.getElementById('inviteCodeReauthBox').classList.add('d-none');
+      document.getElementById('formReauthInvite')?.reset();
+    });
+
+    document.getElementById('formReauthInvite')?.addEventListener('submit', async e => {
+      e.preventDefault();
+      const err = document.getElementById('inviteCodeManageError');
+      if (err) err.classList.add('d-none');
+      const r = await regenerateInviteCode(document.getElementById('inviteReauthPin').value);
+      if (r.ok) {
+        document.getElementById('inviteCodeManageDisplay').textContent = r.inviteCode;
+        document.getElementById('inviteCodeFamilyName').textContent = '家庭：' + r.familyName;
+        document.getElementById('inviteCodeReauthBox').classList.add('d-none');
+        document.getElementById('formReauthInvite')?.reset();
+        showToast('邀请码已重设，旧邀请码立即失效', 'warning');
+      } else {
+        if (err) { err.textContent = r.error; err.classList.remove('d-none'); }
+      }
+    });
+
     document.getElementById('btnShowJoin')?.addEventListener('click', () => {
       bootstrap.Modal.getOrCreateInstance(document.getElementById('modalJoin')).show();
     });
@@ -442,6 +567,9 @@ const FamilyAuth = (function () {
     logout,
     login,
     verifyManagerPin,
+    forgotPassword,
+    getInviteCode,
+    regenerateInviteCode,
     showManagerVerifyModal,
     reloadAllModules,
     updateSafetyVisibility,

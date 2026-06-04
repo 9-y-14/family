@@ -50,6 +50,8 @@ export async function onRequest(context) {
       if (request.method === 'POST' && action === 'join') return joinFamily(request, env);
       if (request.method === 'POST' && action === 'login') return login(request, env);
       if (request.method === 'POST' && action === 'manager-verify') return verifyManagerPin(request, env);
+      if (request.method === 'POST' && action === 'reset-password') return resetPassword(request, env);
+      if (request.method === 'POST' && action === 'invite-code') return manageInviteCode(request, env);
     }
 
     const user = await authenticate(request, env);
@@ -220,6 +222,103 @@ async function verifyManagerPin(request, env) {
     MANAGER_TOKEN_TTL_SEC
   );
   return json({ managerToken, expiresIn: MANAGER_TOKEN_TTL_SEC });
+}
+
+/* ---------- 忘记密码 / 邀请码恢复 ---------- */
+
+async function resetPassword(request, env) {
+  const body = await parseJson(request);
+  const { username, managerPin, newPassword } = body;
+  if (!username?.trim() || !managerPin || !newPassword) {
+    return json({ error: '请填写用户名、管理者验证码和新密码' }, 400);
+  }
+  if (newPassword.length < 6) {
+    return json({ error: '新密码至少 6 位' }, 400);
+  }
+
+  // 查找用户及其家庭
+  const userRow = await env.DB.prepare(
+    'SELECT u.id, u.family_id, u.role, f.name AS family_name, f.manager_pin_hash FROM users u JOIN families f ON f.id = u.family_id WHERE u.username = ?'
+  ).bind(username.trim()).first();
+  if (!userRow) return json({ error: '用户名不存在' }, 404);
+
+  // 验证管理者验证码
+  const pinOk = await verifySecret(String(managerPin), userRow.manager_pin_hash);
+  if (!pinOk) return json({ error: '管理者验证码错误，请向家庭管理者确认' }, 401);
+
+  // 重置密码
+  const passHash = await hashSecret(newPassword);
+  await env.DB.prepare('UPDATE users SET password_hash = ? WHERE id = ?')
+    .bind(passHash, userRow.id).run();
+
+  return json({
+    ok: true,
+    message: '密码已重置，请使用新密码登录',
+    familyName: userRow.family_name,
+    role: userRow.role
+  });
+}
+
+async function manageInviteCode(request, env) {
+  const body = await parseJson(request);
+  const { managerPin, action } = body;
+
+  // 支持两种验证方式：已登录管理者token 或 用户名+管理者PIN
+  let familyId, familyName;
+  const user = await authenticate(request, env);
+
+  if (user && user.role === 'manager' && action !== 'regenerate') {
+    // 已登录管理者直接查看邀请码（查看不需要PIN，因为已经登录了）
+    familyId = user.family_id;
+  } else if (user && user.role === 'manager' && action === 'regenerate') {
+    // 重生成邀请码需要PIN验证
+    if (!managerPin) return json({ error: '重设邀请码需要验证管理者验证码' }, 400);
+    const family = await env.DB.prepare('SELECT id, name, manager_pin_hash FROM families WHERE id = ?')
+      .bind(user.family_id).first();
+    if (!family) return json({ error: '家庭不存在' }, 404);
+    const pinOk = await verifySecret(String(managerPin), family.manager_pin_hash);
+    if (!pinOk) return json({ error: '管理者验证码错误' }, 401);
+    familyId = family.id;
+  } else if (managerPin) {
+    // 未登录时，通过用户名+管理者PIN查看/重设邀请码
+    const { username } = body;
+    if (!username?.trim()) return json({ error: '请提供用户名' }, 400);
+    const family = await env.DB.prepare(
+      'SELECT f.id, f.name, f.manager_pin_hash FROM users u JOIN families f ON f.id = u.family_id WHERE u.username = ?'
+    ).bind(username.trim()).first();
+    if (!family) return json({ error: '用户名不存在或未加入任何家庭' }, 404);
+    const pinOk = await verifySecret(String(managerPin), family.manager_pin_hash);
+    if (!pinOk) return json({ error: '管理者验证码错误' }, 401);
+    familyId = family.id;
+    familyName = family.name;
+  } else {
+    return json({ error: '请先登录或提供用户名和管理者验证码' }, 400);
+  }
+
+  // 获取当前邀请码
+  const family = familyId ? await env.DB.prepare('SELECT id, name, invite_code FROM families WHERE id = ?')
+    .bind(familyId).first() : null;
+  if (!family) return json({ error: '家庭不存在' }, 404);
+
+  // 如果要求重生成
+  if (action === 'regenerate') {
+    const newCode = generateInviteCode();
+    await env.DB.prepare('UPDATE families SET invite_code = ? WHERE id = ?')
+      .bind(newCode, family.id).run();
+    return json({
+      ok: true,
+      inviteCode: newCode,
+      familyName: family.name,
+      regenerated: true
+    });
+  }
+
+  // 仅查看
+  return json({
+    ok: true,
+    inviteCode: family.invite_code,
+    familyName: family.name
+  });
 }
 
 /* ---------- 家庭数据同步 ---------- */
