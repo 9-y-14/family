@@ -558,10 +558,10 @@
             <div class="table-responsive" style="max-height:300px;overflow-y:auto;">
               <table class="table table-sm table-hover mb-0">
                 <thead class="table-danger sticky-top">
-                  <tr><th>名称</th><th>类型</th><th>保管位置</th><th>到期日期</th><th>预警天数</th><th>剩余天数</th><th>备注</th><th>操作</th></tr>
+                  <tr><th>名称</th><th>类型</th><th>保管位置</th><th>到期日期</th><th>预警天数</th><th>剩余天数</th><th>备注</th></tr>
                 </thead>
                 <tbody id="docAlertBody">
-                  <tr><td colspan="8" class="text-center text-muted py-2">暂无即将到期的证件或保单 ✓</td></tr>
+                  <tr><td colspan="7" class="text-center text-muted py-2">暂无即将到期的证件或保单 ✓</td></tr>
                 </tbody>
               </table>
             </div>
@@ -605,9 +605,9 @@
                 </div>
               </div>
               <div class="col-auto">
-                <label class="form-label small mb-0 text-muted" style="font-size:0.68rem;">预警天数</label>
+                <label class="form-label small mb-0 text-muted" style="font-size:0.68rem;">默认预警</label>
                 <div class="input-group input-group-sm" style="width:110px;">
-                  <input type="number" class="form-control text-center" id="docWarningDaysInput" value="90" min="1" max="999" title="设置到期预警天数阈值" style="font-weight:bold;">
+                  <input type="number" class="form-control text-center" id="docWarningDaysInput" value="90" min="1" max="3650" title="新增条目时的默认预警天数（点击表格中每条数据的天数可单独修改）" style="font-weight:bold;">
                   <span class="input-group-text">天</span>
                 </div>
               </div>
@@ -656,10 +656,10 @@
                 <div class="table-responsive" style="max-height:350px;overflow-y:auto;">
                   <table class="table table-sm table-hover mb-0" id="docCleanTable">
                     <thead class="table-light sticky-top">
-                      <tr><th>登记日期</th><th>名称</th><th>类型</th><th>保管位置</th><th>生效日期</th><th>到期日期</th><th>预警天数</th><th>剩余天数</th><th>备注</th><th>操作</th></tr>
+                      <tr><th>登记日期</th><th>名称</th><th>类型</th><th>保管位置</th><th>生效日期</th><th>到期日期</th><th>预警天数(可点击修改)</th><th>剩余天数</th><th>备注</th></tr>
                     </thead>
                     <tbody id="docCleanBody">
-                      <tr><td colspan="10" class="text-center text-muted py-3">暂无数据</td></tr>
+                      <tr><td colspan="9" class="text-center text-muted py-3">暂无数据</td></tr>
                     </tbody>
                   </table>
                 </div>

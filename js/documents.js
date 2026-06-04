@@ -19,23 +19,21 @@ const STORAGE_KEY_DOCUMENTS = 'family_ledger_documents';
 // 合法的证件类型枚举
 const VALID_DOC_TYPES = ['身份证件','房产证明','驾驶证件','医疗保险','人寿保险','车辆保险'];
 
-// 预警天数阈值（用户可自定义，持久化到 localStorage）
+// 默认预警天数（新增条目时的默认值，持久化到 localStorage）
 const STORAGE_KEY_WARNING_DAYS = 'family_ledger_doc_warning_days';
-let WARNING_DAYS = parseInt(localStorage.getItem(STORAGE_KEY_WARNING_DAYS), 10) || 90;
+let DEFAULT_WARNING_DAYS = parseInt(localStorage.getItem(STORAGE_KEY_WARNING_DAYS), 10) || 90;
 
-function getWarningDays() {
-  return WARNING_DAYS;
+function getDefaultWarningDays() {
+  return DEFAULT_WARNING_DAYS;
 }
 
-function setWarningDays(days) {
+function setDefaultWarningDays(days) {
   days = parseInt(days, 10);
   if (isNaN(days) || days < 1) days = 90;
-  WARNING_DAYS = days;
+  DEFAULT_WARNING_DAYS = days;
   localStorage.setItem(STORAGE_KEY_WARNING_DAYS, days);
-  // 重新计算所有条目的状态
-  recalculateAllDocStatuses();
-  refreshAllDocViews();
   updateWarningDaysUI();
+  showDocStatus(`默认预警天数已设为 ${days} 天（仅影响新增条目）`, 'warning');
 }
 
 /* ---------- 本地存储 ---------- */
@@ -46,6 +44,10 @@ function loadDocumentsData() {
       const data = JSON.parse(raw);
       documentsState.rawData = data.rawData || [];
       documentsState.cleanData = data.cleanData || [];
+      // 向后兼容：旧数据没有 warningDays，补上默认值
+      documentsState.cleanData.forEach(d => {
+        if (d.warningDays == null) d.warningDays = DEFAULT_WARNING_DAYS;
+      });
     }
   } catch (e) { console.warn('[证件] 读取本地存储失败', e); }
 }
@@ -123,6 +125,7 @@ function cleanDocRow(row, index) {
   const rawStartDate = row['生效日期'];
   const rawEndDate = row['到期日期'];
   const rawNote = row['备注'] || '';
+  const rawWarningDays = row['预警天数'];
 
   const regDate = parseDateDoc(rawRegDate);
   if (!regDate) { console.warn(`[证件-清洗] 第${index}行：登记日期不合法 -> "${rawRegDate}"，已丢弃`); return null; }
@@ -150,15 +153,20 @@ function cleanDocRow(row, index) {
 
   const location = (rawLocation && String(rawLocation).trim()) ? String(rawLocation).trim() : '未标注';
 
+  // 每条数据独立的预警天数（CSV可选列，缺省用全局默认值）
+  const warningDays = rawWarningDays != null
+    ? (parseInt(rawWarningDays, 10) || DEFAULT_WARNING_DAYS)
+    : DEFAULT_WARNING_DAYS;
+
   const remainingDays = calcRemainingDays(endDate);
   // 判断状态
   let status = 'normal';
   if (remainingDays < 0) status = 'expired';
-  else if (remainingDays <= WARNING_DAYS) status = 'warning';
+  else if (remainingDays <= warningDays) status = 'warning';
 
   return {
     regDate, name, type: trimmedType, location,
-    startDate, endDate, remainingDays, status,
+    startDate, endDate, remainingDays, status, warningDays,
     note: String(rawNote).trim(),
     expiryYear: parseInt(endDate.substring(0,4), 10),
     expiryMonth: parseInt(endDate.substring(5,7), 10)
@@ -229,12 +237,12 @@ function renderDocStatusBadge(status, days) {
 function renderDocTable(data, tbodyId, isClean) {
   const tbody = document.getElementById(tbodyId);
   if (!data || data.length === 0) {
-    const cols = isClean ? 8 : 7;
+    const cols = isClean ? 10 : 7;
     tbody.innerHTML = `<tr><td colspan="${cols}" class="text-center text-muted py-3">暂无数据</td></tr>`;
     return;
   }
 
-  const rows = data.map(d => {
+  const rows = data.map((d, idx) => {
     let rowClass = '';
     if (isClean) {
       if (d.status === 'expired') rowClass = 'row-expired';
@@ -242,6 +250,7 @@ function renderDocTable(data, tbodyId, isClean) {
     }
 
     if (isClean) {
+      const dataIdx = documentsState.cleanData.indexOf(d);
       return `<tr class="${rowClass}">
         <td>${escapeHtmlDoc(d.regDate)}</td>
         <td>${escapeHtmlDoc(d.name)}</td>
@@ -249,6 +258,9 @@ function renderDocTable(data, tbodyId, isClean) {
         <td>${escapeHtmlDoc(d.location)}</td>
         <td>${escapeHtmlDoc(d.startDate)}</td>
         <td>${escapeHtmlDoc(d.endDate)}</td>
+        <td style="text-align:center;cursor:pointer" title="点击修改预警天数" onclick="window._editDocWarningDays(${dataIdx})">
+          <span class="badge bg-light text-dark border">${escapeHtmlDoc(d.warningDays)}天</span>
+        </td>
         <td>${renderDocStatusBadge(d.status, d.remainingDays)}</td>
         <td class="text-muted small">${escapeHtmlDoc(d.note)}</td>
       </tr>`;
@@ -266,6 +278,33 @@ function renderDocTable(data, tbodyId, isClean) {
   });
   tbody.innerHTML = rows.join('');
 }
+
+/**
+ * 内联编辑某条数据的预警天数（由表格 onclick 触发）
+ */
+function editDocWarningDaysInline(dataIdx) {
+  const item = documentsState.cleanData[dataIdx];
+  if (!item) return;
+  const newVal = prompt(`修改「${item.name}」的预警天数\n当前：${item.warningDays} 天\n请输入新值（1~3650）：`, item.warningDays);
+  if (newVal === null) return;
+  const days = parseInt(newVal, 10);
+  if (isNaN(days) || days < 1 || days > 3650) {
+    showDocStatus('请输入 1~3650 之间的有效天数', 'danger');
+    return;
+  }
+  item.warningDays = days;
+  // 重新计算本条状态
+  const remainingDays = calcRemainingDays(item.endDate);
+  item.remainingDays = remainingDays;
+  if (remainingDays < 0) item.status = 'expired';
+  else if (remainingDays <= days) item.status = 'warning';
+  else item.status = 'normal';
+  saveDocumentsData();
+  onDocFilterChange();
+  showDocStatus(`「${item.name}」预警天数已更新为 ${days} 天`, 'success');
+}
+// 挂载到 window 供 HTML onclick 调用
+window._editDocWarningDays = editDocWarningDaysInline;
 
 /**
  * 渲染预警面板
@@ -297,6 +336,7 @@ function renderAlertPanel() {
       <td>${renderDocTypeBadge(d.type)}</td>
       <td>${escapeHtmlDoc(d.location)}</td>
       <td>${escapeHtmlDoc(d.endDate)}</td>
+      <td><span class="badge bg-light text-dark border">${escapeHtmlDoc(d.warningDays)}天</span></td>
       <td>${daysText}</td>
       <td class="small">${escapeHtmlDoc(d.note)}</td>
     </tr>`;
@@ -320,34 +360,38 @@ function updateDocStatsBadges() {
 }
 
 /**
- * 重新计算所有 cleanData 的剩余天数与状态（预警阈值变化时调用）
+ * 重新计算单条数据的剩余天数与状态（使用该条独立的 warningDays）
  */
-function recalculateAllDocStatuses() {
-  documentsState.cleanData.forEach(d => {
-    const remainingDays = calcRemainingDays(d.endDate);
-    d.remainingDays = remainingDays;
-    if (remainingDays < 0) d.status = 'expired';
-    else if (remainingDays <= WARNING_DAYS) d.status = 'warning';
-    else d.status = 'normal';
-  });
+function recalculateDocStatus(item) {
+  const remainingDays = calcRemainingDays(item.endDate);
+  item.remainingDays = remainingDays;
+  if (remainingDays < 0) item.status = 'expired';
+  else if (remainingDays <= (item.warningDays || DEFAULT_WARNING_DAYS)) item.status = 'warning';
+  else item.status = 'normal';
 }
 
 /**
- * 更新 UI 中所有与预警天数相关的显示
+ * 重新计算所有 cleanData（页面刷新/打开时调用，每条用各自的 warningDays）
+ */
+function recalculateAllDocStatuses() {
+  documentsState.cleanData.forEach(d => recalculateDocStatus(d));
+}
+
+/**
+ * 同步默认预警天数 UI（仅输入框数值）
  */
 function updateWarningDaysUI() {
-  // 更新输入框
   const input = document.getElementById('docWarningDaysInput');
-  if (input) input.value = WARNING_DAYS;
-  // 更新筛选下拉中的天数文案
+  if (input) input.value = DEFAULT_WARNING_DAYS;
+  // 筛选下拉统一移除天数数字（每条独立，不再显示全局阈值）
   const statusSelect = document.getElementById('docFilterStatus');
   if (statusSelect) {
     const warningOpt = statusSelect.querySelector('option[value="warning"]');
-    if (warningOpt) warningOpt.textContent = `即将到期（≤${WARNING_DAYS}天）`;
+    if (warningOpt) warningOpt.textContent = '即将到期';
   }
-  // 更新预警面板标题
+  // 预警面板标题去掉天数
   const alertHeader = document.querySelector('#docAlertPanel .card-header span');
-  if (alertHeader) alertHeader.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-2"></i>即将到期预警（≤${WARNING_DAYS}天）`;
+  if (alertHeader) alertHeader.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-2"></i>即将到期预警（每条独立预警天数）';
 }
 
 function refreshAllDocViews() {
@@ -534,6 +578,10 @@ function bindDocumentsEvents() {
     const startDate = document.getElementById('docStartDate').value;
     const endDate = document.getElementById('docEndDate').value;
     const note = document.getElementById('docNote').value.trim();
+    const warningDaysInput = document.getElementById('docWarningDaysAdd');
+    const warningDays = warningDaysInput
+      ? (parseInt(warningDaysInput.value, 10) || DEFAULT_WARNING_DAYS)
+      : DEFAULT_WARNING_DAYS;
 
     if (!regDate || !name || !type || !startDate || !endDate) { alert('请填写所有必填字段！'); return; }
 
@@ -544,10 +592,10 @@ function bindDocumentsEvents() {
     const remainingDays = calcRemainingDays(endDate);
     let status = 'normal';
     if (remainingDays < 0) status = 'expired';
-    else if (remainingDays <= WARNING_DAYS) status = 'warning';
+    else if (remainingDays <= warningDays) status = 'warning';
 
     const cleaned = {
-      regDate, name, type, location, startDate, endDate, remainingDays, status, note,
+      regDate, name, type, location, startDate, endDate, remainingDays, status, warningDays, note,
       expiryYear: parseInt(endDate.substring(0,4), 10),
       expiryMonth: parseInt(endDate.substring(5,7), 10)
     };
@@ -557,9 +605,11 @@ function bindDocumentsEvents() {
     saveDocumentsData();
     documentsState.filteredData = applyDocFilter();
     refreshAllDocViews();
-    showDocStatus(`手动新增成功：${name}`, 'success');
+    showDocStatus(`手动新增成功：${name}（预警：${warningDays}天）`, 'success');
     document.getElementById('formDocAdd').reset();
     document.getElementById('docType').value = '身份证件';
+    // 重置预警天数为默认值
+    if (warningDaysInput) warningDaysInput.value = DEFAULT_WARNING_DAYS;
   });
 
   // 筛选控件
@@ -576,14 +626,14 @@ function bindDocumentsEvents() {
     onDocFilterChange();
   });
 
-  // 预警天数输入
+  // 默认预警天数输入（仅影响新增条目，不改变已有数据）
   document.getElementById('docWarningDaysInput')?.addEventListener('change', function() {
     const val = parseInt(this.value, 10);
     if (isNaN(val) || val < 1) {
-      this.value = WARNING_DAYS;
+      this.value = DEFAULT_WARNING_DAYS;
       return;
     }
-    setWarningDays(val);
+    setDefaultWarningDays(val);
   });
   // 回车确认
   document.getElementById('docWarningDaysInput')?.addEventListener('keydown', function(e) {
@@ -598,25 +648,25 @@ function bindDocumentsEvents() {
 }
 
 /* ---------- 示例CSV数据 ---------- */
-const DEMO_DOC_CSV = `登记日期,证件/保单名称,证件类型,保管位置,生效日期,到期日期,备注
-2020-03-15,身份证-张三,身份证件,书房抽屉,2020-03-15,2040-03-15,长期有效
-2021-06-01,房产证-XX小区,房产证明,银行保险柜,2021-06-01,2099-12-31,永久产权
-2022-01-10,驾驶证-张三,驾驶证件,随身钱包,2022-01-10,2028-01-10,首次申领
-2023-05-20,社保卡-张三,身份证件,卧室床头柜,2023-05-20,2099-12-31,长期
-2024-01-01,平安百万医疗险,医疗保险,文件柜A区,2024-01-01,2026-01-01,年度续保
-2024-03-15,中国人寿终身寿险,人寿保险,文件柜B区,2024-03-15,2054-03-15,30年期
-2024-06-01,人保车险-京A88888,车辆保险,车内手套箱,2024-06-01,2025-06-01,年度续保
-2024-07-01,身份证-李四,身份证件,书房抽屉,2024-07-01,2044-07-01,配偶证件
-2024-08-15,驾驶证-李四,驾驶证件,随身提包,2024-08-15,2030-08-15,配偶驾照
-2024-09-01,太平医保补充险,医疗保险,文件柜A区,2024-09-01,2026-09-01,2年期
-2024-10-10,房产证-YY小区,房产证明,银行保险柜,2024-10-10,2099-12-31,投资房产
-2024-11-01,太平洋车险-京B66666,车辆保险,车内手套箱,2024-11-01,2025-11-01,第二辆车
-2025-01-15,泰康养老险,人寿保险,文件柜B区,2025-01-15,2035-01-15,10年期
-2025-02-01,众安门诊险,医疗保险,文件柜A区,2025-02-01,2026-02-01,年度续保
-2025-03-01,身份证-王五,身份证件,书房抽屉,2025-03-01,2045-03-01,子女证件
-2025-04-15,驾驶证-王五,驾驶证件,随身钱包,2025-04-15,2031-04-15,子女驾照
-2025-05-01,阳光车险-京C12345,车辆保险,车内手套箱,2025-05-01,2026-05-01,第三辆车
-2025-06-01,华夏重疾险,人寿保险,文件柜B区,2025-06-01,2045-06-01,20年期`;
+const DEMO_DOC_CSV = `登记日期,证件/保单名称,证件类型,保管位置,生效日期,到期日期,备注,预警天数
+2020-03-15,身份证-张三,身份证件,书房抽屉,2020-03-15,2040-03-15,长期有效,180
+2021-06-01,房产证-XX小区,房产证明,银行保险柜,2021-06-01,2099-12-31,永久产权,365
+2022-01-10,驾驶证-张三,驾驶证件,随身钱包,2022-01-10,2028-01-10,首次申领,60
+2023-05-20,社保卡-张三,身份证件,卧室床头柜,2023-05-20,2099-12-31,长期,365
+2024-01-01,平安百万医疗险,医疗保险,文件柜A区,2024-01-01,2026-01-01,年度续保,30
+2024-03-15,中国人寿终身寿险,人寿保险,文件柜B区,2024-03-15,2054-03-15,30年期,90
+2024-06-01,人保车险-京A88888,车辆保险,车内手套箱,2024-06-01,2025-06-01,年度续保,15
+2024-07-01,身份证-李四,身份证件,书房抽屉,2024-07-01,2044-07-01,配偶证件,180
+2024-08-15,驾驶证-李四,驾驶证件,随身提包,2024-08-15,2030-08-15,配偶驾照,60
+2024-09-01,太平医保补充险,医疗保险,文件柜A区,2024-09-01,2026-09-01,2年期,30
+2024-10-10,房产证-YY小区,房产证明,银行保险柜,2024-10-10,2099-12-31,投资房产,365
+2024-11-01,太平洋车险-京B66666,车辆保险,车内手套箱,2024-11-01,2025-11-01,第二辆车,15
+2025-01-15,泰康养老险,人寿保险,文件柜B区,2025-01-15,2035-01-15,10年期,90
+2025-02-01,众安门诊险,医疗保险,文件柜A区,2025-02-01,2026-02-01,年度续保,30
+2025-03-01,身份证-王五,身份证件,书房抽屉,2025-03-01,2045-03-01,子女证件,180
+2025-04-15,驾驶证-王五,驾驶证件,随身钱包,2025-04-15,2031-04-15,子女驾照,60
+2025-05-01,阳光车险-京C12345,车辆保险,车内手套箱,2025-05-01,2026-05-01,第三辆车,15
+2025-06-01,华夏重疾险,人寿保险,文件柜B区,2025-06-01,2045-06-01,20年期,90`;
 
 /* ---------- 初始化 ---------- */
 function initDocuments() {
