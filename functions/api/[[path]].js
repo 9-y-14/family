@@ -71,8 +71,13 @@ export async function onRequest(context) {
     }
 
     if (route === 'data') {
-      if (request.method === 'GET') return getFamilyData(user, env);
+      if (request.method === 'GET') return getFamilyData(request, user, env);
       if (request.method === 'PUT') return putFamilyData(request, user, env);
+    }
+
+    if (route === 'members') {
+      if (request.method === 'GET') return listMembers(user, env);
+      if (parts[1] && request.method === 'DELETE') return removeMember(request, user, env, parts[1]);
     }
 
     return json({ error: '接口不存在' }, 404);
@@ -323,9 +328,18 @@ async function manageInviteCode(request, env) {
 
 /* ---------- 家庭数据同步 ---------- */
 
-async function getFamilyData(user, env) {
+async function getFamilyData(request, user, env) {
+  const url = new URL(request.url);
+  const checkOnly = url.searchParams.get('check') === '1';
+
   const row = await env.DB.prepare('SELECT payload, updated_at FROM family_data WHERE family_id = ?')
     .bind(user.family_id).first();
+
+  // 轻量轮询：仅返回时间戳
+  if (checkOnly) {
+    return json({ updatedAt: row?.updated_at || 0, hasData: !!row });
+  }
+
   let payload = {};
   if (row?.payload) {
     try { payload = JSON.parse(row.payload); } catch (_) { payload = {}; }
@@ -416,6 +430,57 @@ async function authenticateManager(request, env) {
   const payload = await verifyToken(mgrHeader, env);
   if (!payload?.mgr) return null;
   return authenticate(request, env);
+}
+
+/* ---------- 成员管理（仅管理者） ---------- */
+
+async function listMembers(user, env) {
+  if (user.role !== 'manager') return json({ error: '仅家庭管理者可管理成员' }, 403);
+  const rows = await env.DB.prepare(
+    'SELECT id, username, display_name, role, created_at FROM users WHERE family_id = ? ORDER BY role DESC, created_at ASC'
+  ).bind(user.family_id).all();
+  const members = (rows.results || []).map(r => ({
+    id: r.id,
+    username: r.username,
+    displayName: r.display_name,
+    role: r.role,
+    createdAt: r.created_at,
+    isSelf: r.id === user.id
+  }));
+  return json({ members, count: members.length });
+}
+
+async function removeMember(request, user, env, targetId) {
+  if (user.role !== 'manager') return json({ error: '仅家庭管理者可移除成员' }, 403);
+  if (targetId === user.id) return json({ error: '不能移除自己' }, 400);
+
+  // 二次验证管理者PIN
+  const body = await parseJson(request);
+  const { managerPin } = body;
+  if (!managerPin) return json({ error: '请输入管理者验证码以确认移除操作' }, 400);
+
+  const family = await env.DB.prepare('SELECT manager_pin_hash FROM families WHERE id = ?')
+    .bind(user.family_id).first();
+  if (!family) return json({ error: '家庭不存在' }, 404);
+
+  const pinOk = await verifySecret(String(managerPin), family.manager_pin_hash);
+  if (!pinOk) return json({ error: '管理者验证码错误' }, 401);
+
+  // 查找目标成员
+  const target = await env.DB.prepare('SELECT id, username, display_name, role FROM users WHERE id = ? AND family_id = ?')
+    .bind(targetId, user.family_id).first();
+  if (!target) return json({ error: '成员不存在或不属于此家庭' }, 404);
+  if (target.role === 'manager') return json({ error: '不能移除其他管理者' }, 400);
+
+  // 删除用户
+  await env.DB.prepare('DELETE FROM users WHERE id = ? AND family_id = ?')
+    .bind(targetId, user.family_id).run();
+
+  return json({
+    ok: true,
+    message: `已移除成员 ${target.display_name || target.username}`,
+    removed: { id: target.id, username: target.username, displayName: target.display_name }
+  });
 }
 
 /* ---------- 密码 / JWT 工具 ---------- */

@@ -10,6 +10,8 @@ const FamilySync = (function () {
   let serverUpdatedAt = 0;
   let saveTimer = null;
   let pulling = false;
+  let pollTimer = null;
+  const POLL_INTERVAL_MS = 5000;
 
   const MODULE_KEYS = {
     accounting: 'family_ledger_accounting',
@@ -187,6 +189,62 @@ const FamilySync = (function () {
     scheduleSave();
   }
 
+  /* ---------- 实时轮询：检测其他成员的修改 ---------- */
+
+  function startPolling() {
+    stopPolling();
+    if (!FamilyAuth.isLoggedIn()) return;
+    pollTimer = setInterval(() => checkForUpdates(), POLL_INTERVAL_MS);
+  }
+
+  function stopPolling() {
+    if (pollTimer) {
+      clearInterval(pollTimer);
+      pollTimer = null;
+    }
+  }
+
+  async function checkForUpdates() {
+    if (!FamilyAuth.isLoggedIn() || pulling) return;
+    try {
+      const { ok, status, data } = await apiRequest('/data?check=1', {
+        method: 'GET',
+        headers: authHeaders(false)
+      });
+      if (status === 401) {
+        FamilyAuth.logout(false);
+        stopPolling();
+        return;
+      }
+      if (!ok) return;
+      const serverTs = data.updatedAt || 0;
+      if (serverTs > serverUpdatedAt) {
+        // 服务器有更新，拉取并刷新UI（不切换分区，只重绘当前分区）
+        await pullFromServer();
+        if (typeof FamilyAuth.updateSafetyVisibility === 'function') {
+          FamilyAuth.updateSafetyVisibility();
+        }
+        // 重置所有初始化标记，触发完整重绘
+        if (typeof zoneInitialized !== 'undefined') {
+          zoneInitialized.safety = false;
+          zoneInitialized.growth = false;
+        }
+        if (typeof safetySubTabInitialized !== 'undefined') {
+          Object.keys(safetySubTabInitialized).forEach(k => { safetySubTabInitialized[k] = false; });
+        }
+        if (typeof growthSubTabInitialized !== 'undefined') {
+          Object.keys(growthSubTabInitialized).forEach(k => { growthSubTabInitialized[k] = false; });
+        }
+        if (typeof switchZone === 'function') {
+          const currentZone = document.getElementById('zoneSafety')?.classList.contains('d-none') === false ? 'safety' : 'growth';
+          switchZone(currentZone);
+        }
+      }
+    } catch (_) {
+      // 静默失败，下次继续轮询
+    }
+  }
+
   return {
     MODULE_KEYS,
     getSession,
@@ -198,6 +256,8 @@ const FamilySync = (function () {
     applyPayload,
     collectPayload,
     checkApiAvailable,
+    startPolling,
+    stopPolling,
     setManagerUnlock(managerToken, expiresIn) {
       sessionStorage.setItem(
         MANAGER_KEY,

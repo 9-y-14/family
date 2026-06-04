@@ -139,6 +139,30 @@ const FamilyAuth = (function () {
     return { ok: true, inviteCode: data.inviteCode, familyName: data.familyName };
   }
 
+  async function getMembers() {
+    const res = await fetch(API_BASE.replace(/\/$/, '') + '/members', {
+      method: 'GET',
+      headers: { Authorization: 'Bearer ' + (session?.token || '') }
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return { ok: false, error: data.error || '获取成员失败' };
+    return { ok: true, members: data.members, count: data.count };
+  }
+
+  async function removeMember(memberId, managerPin) {
+    const res = await fetch(API_BASE.replace(/\/$/, '') + '/members/' + memberId, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer ' + (session?.token || '')
+      },
+      body: JSON.stringify({ managerPin })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return { ok: false, error: data.error || '移除失败' };
+    return { ok: true, message: data.message };
+  }
+
   async function onLoginSuccess(data) {
     FamilySync.clearManagerUnlock();
     saveSession({ token: data.token, user: data.user });
@@ -149,6 +173,7 @@ const FamilyAuth = (function () {
     }
     resetModuleFlags();
     reloadAllModules();
+    FamilySync.startPolling();
     if (isManager()) {
       showManagerVerifyModal(() => {
         switchZoneForAuth('safety');
@@ -160,6 +185,7 @@ const FamilyAuth = (function () {
 
   function logout(showMessage) {
     FamilySync.clearManagerUnlock();
+    FamilySync.stopPolling();
     saveSession(null);
     resetModuleFlags();
     reloadAllModules();
@@ -219,6 +245,11 @@ const FamilyAuth = (function () {
       if (inviteBtn) {
         if (isManager()) inviteBtn.classList.remove('d-none');
         else inviteBtn.classList.add('d-none');
+      }
+      const memberBtn = document.getElementById('btnMemberManage');
+      if (memberBtn) {
+        if (isManager()) memberBtn.classList.remove('d-none');
+        else memberBtn.classList.add('d-none');
       }
       if (hint) {
         hint.innerHTML = isMember()
@@ -532,6 +563,121 @@ const FamilyAuth = (function () {
     document.getElementById('btnShowJoin')?.addEventListener('click', () => {
       bootstrap.Modal.getOrCreateInstance(document.getElementById('modalJoin')).show();
     });
+
+    // 成员管理
+    document.getElementById('btnMemberManage')?.addEventListener('click', async () => {
+      const err = document.getElementById('memberManageError');
+      const succ = document.getElementById('memberManageSuccess');
+      if (err) err.classList.add('d-none');
+      if (succ) succ.classList.add('d-none');
+      document.getElementById('memberRemoveConfirm').classList.add('d-none');
+      document.getElementById('formRemoveMember')?.reset();
+
+      // 加载邀请码
+      const codeR = await getInviteCode();
+      if (codeR.ok) {
+        document.getElementById('memberInviteCode').textContent = codeR.inviteCode;
+      }
+
+      // 加载成员列表
+      await refreshMemberList();
+
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('modalMemberManage')).show();
+    });
+
+    document.getElementById('btnCopyMemberInvite')?.addEventListener('click', () => {
+      const code = document.getElementById('memberInviteCode').textContent;
+      if (code && code !== '----') {
+        navigator.clipboard.writeText(code).then(() => {
+          showToast('邀请码已复制到剪贴板', 'success');
+        });
+      }
+    });
+
+    document.getElementById('btnCancelRemove')?.addEventListener('click', () => {
+      document.getElementById('memberRemoveConfirm').classList.add('d-none');
+      document.getElementById('formRemoveMember')?.reset();
+      document.getElementById('memberManageError')?.classList.add('d-none');
+    });
+
+    document.getElementById('formRemoveMember')?.addEventListener('submit', async e => {
+      e.preventDefault();
+      const err = document.getElementById('memberManageError');
+      const succ = document.getElementById('memberManageSuccess');
+      if (err) err.classList.add('d-none');
+      if (succ) succ.classList.add('d-none');
+
+      const targetId = document.getElementById('memberRemoveConfirm').dataset.targetId;
+      const pin = document.getElementById('removePin').value;
+      if (!targetId || !pin) return;
+
+      const r = await removeMember(targetId, pin);
+      if (r.ok) {
+        document.getElementById('memberRemoveConfirm').classList.add('d-none');
+        document.getElementById('formRemoveMember')?.reset();
+        showToast(r.message, 'success');
+        await refreshMemberList();
+      } else {
+        if (err) { err.textContent = r.error; err.classList.remove('d-none'); }
+      }
+    });
+  }
+
+  async function refreshMemberList() {
+    const container = document.getElementById('memberListContainer');
+    if (!container) return;
+    const r = await getMembers();
+    if (!r.ok) {
+      container.innerHTML = `<div class="text-center text-danger small py-3">${r.error}</div>`;
+      document.getElementById('memberCount').textContent = '0';
+      return;
+    }
+    document.getElementById('memberCount').textContent = r.count;
+    if (r.members.length === 0) {
+      container.innerHTML = '<div class="text-center text-muted small py-3">暂无成员，请分享邀请码</div>';
+      return;
+    }
+    container.innerHTML = r.members.map(m => {
+      const roleBadge = m.role === 'manager'
+        ? '<span class="badge bg-warning text-dark">管理者</span>'
+        : '<span class="badge bg-info text-dark">成员</span>';
+      const selfBadge = m.isSelf ? ' <span class="badge bg-secondary">我</span>' : '';
+      const removeBtn = (!m.isSelf && m.role !== 'manager')
+        ? `<button class="btn btn-outline-danger btn-sm py-0 px-1 member-remove-btn" data-id="${m.id}" data-name="${m.displayName || m.username}" title="移除">
+             <i class="bi bi-x-lg"></i>
+           </button>`
+        : '<span class="text-muted small">—</span>';
+      return `
+        <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
+          <div>
+            <span class="fw-bold">${escapeHtml(m.displayName || m.username)}</span>
+            <span class="text-muted small ms-2">@${escapeHtml(m.username)}</span>
+            ${roleBadge}${selfBadge}
+          </div>
+          <div>${removeBtn}</div>
+        </div>`;
+    }).join('');
+
+    // 绑定移除按钮
+    container.querySelectorAll('.member-remove-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        const name = btn.dataset.name;
+        document.getElementById('memberManageError')?.classList.add('d-none');
+        document.getElementById('memberManageSuccess')?.classList.add('d-none');
+        const confirmBox = document.getElementById('memberRemoveConfirm');
+        confirmBox.dataset.targetId = id;
+        document.getElementById('removeTargetName').textContent = name;
+        document.getElementById('removePin').value = '';
+        confirmBox.classList.remove('d-none');
+      });
+    });
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
   }
 
   function showManagerVerifyModal(onSuccess) {
@@ -551,6 +697,7 @@ const FamilyAuth = (function () {
       FamilySync.pullFromServer().then(() => {
         resetModuleFlags();
         reloadAllModules();
+        FamilySync.startPolling();
       });
     }
   }
@@ -570,6 +717,8 @@ const FamilyAuth = (function () {
     forgotPassword,
     getInviteCode,
     regenerateInviteCode,
+    getMembers,
+    removeMember,
     showManagerVerifyModal,
     reloadAllModules,
     updateSafetyVisibility,

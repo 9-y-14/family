@@ -54,6 +54,9 @@
           <button type="button" class="btn btn-outline-info btn-sm d-none" id="btnShowInviteCode" title="查看邀请码">
             <i class="bi bi-link-45deg"></i>
           </button>
+          <button type="button" class="btn btn-outline-success btn-sm d-none" id="btnMemberManage" title="成员管理">
+            <i class="bi bi-people"></i>
+          </button>
           <button type="button" class="btn btn-outline-light btn-sm" id="btnLogout">
             <i class="bi bi-box-arrow-right"></i>
           </button>
@@ -1627,6 +1630,57 @@
               </div>
               <button type="submit" class="btn btn-danger btn-sm">确认重设</button>
               <button type="button" class="btn btn-outline-secondary btn-sm" id="btnCancelReauthInvite">取消</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 成员管理弹窗（仅管理者可用） -->
+  <div class="modal fade" id="modalMemberManage" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold"><i class="bi bi-people-fill me-2"></i>家庭成员管理</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-danger small d-none" id="memberManageError"></div>
+          <div class="alert alert-success small d-none" id="memberManageSuccess"></div>
+
+          <!-- 邀请区域 -->
+          <div class="card bg-light border mb-3">
+            <div class="card-body p-3">
+              <div class="d-flex align-items-center justify-content-between">
+                <div>
+                  <span class="small text-muted">邀请码：</span>
+                  <span class="fw-bold text-primary fs-5 letter-spacing-wide" id="memberInviteCode">----</span>
+                </div>
+                <button class="btn btn-outline-primary btn-sm" id="btnCopyMemberInvite">
+                  <i class="bi bi-clipboard me-1"></i>复制
+                </button>
+              </div>
+              <div class="form-text mt-1" style="font-size:0.7rem;">将邀请码分享给家人，他们即可加入本家庭</div>
+            </div>
+          </div>
+
+          <!-- 成员列表 -->
+          <h6 class="fw-bold mb-2">当前成员（<span id="memberCount">0</span>人）</h6>
+          <div id="memberListContainer" style="max-height:260px;overflow-y:auto;">
+            <div class="text-center text-muted small py-3">加载中...</div>
+          </div>
+
+          <!-- 移除确认 -->
+          <div id="memberRemoveConfirm" class="mt-3 p-3 bg-danger bg-opacity-10 rounded d-none">
+            <p class="small mb-2">确认移除 <strong id="removeTargetName"></strong>？此操作不可撤销。</p>
+            <form id="formRemoveMember" autocomplete="off" class="d-flex gap-2 align-items-end">
+              <div>
+                <label class="form-label small mb-1">管理者验证码</label>
+                <input type="password" class="form-control form-control-sm" id="removePin" placeholder="输入验证码" required autocomplete="off" style="width:140px;">
+              </div>
+              <button type="submit" class="btn btn-danger btn-sm">确认移除</button>
+              <button type="button" class="btn btn-outline-secondary btn-sm" id="btnCancelRemove">取消</button>
             </form>
           </div>
         </div>
