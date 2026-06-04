@@ -19,8 +19,24 @@ const STORAGE_KEY_DOCUMENTS = 'family_ledger_documents';
 // 合法的证件类型枚举
 const VALID_DOC_TYPES = ['身份证件','房产证明','驾驶证件','医疗保险','人寿保险','车辆保险'];
 
-// 预警天数阈值
-const WARNING_DAYS = 90;
+// 预警天数阈值（用户可自定义，持久化到 localStorage）
+const STORAGE_KEY_WARNING_DAYS = 'family_ledger_doc_warning_days';
+let WARNING_DAYS = parseInt(localStorage.getItem(STORAGE_KEY_WARNING_DAYS), 10) || 90;
+
+function getWarningDays() {
+  return WARNING_DAYS;
+}
+
+function setWarningDays(days) {
+  days = parseInt(days, 10);
+  if (isNaN(days) || days < 1) days = 90;
+  WARNING_DAYS = days;
+  localStorage.setItem(STORAGE_KEY_WARNING_DAYS, days);
+  // 重新计算所有条目的状态
+  recalculateAllDocStatuses();
+  refreshAllDocViews();
+  updateWarningDaysUI();
+}
 
 /* ---------- 本地存储 ---------- */
 function loadDocumentsData() {
@@ -303,6 +319,37 @@ function updateDocStatsBadges() {
   document.getElementById('docCleanCount').textContent = `${total}条`;
 }
 
+/**
+ * 重新计算所有 cleanData 的剩余天数与状态（预警阈值变化时调用）
+ */
+function recalculateAllDocStatuses() {
+  documentsState.cleanData.forEach(d => {
+    const remainingDays = calcRemainingDays(d.endDate);
+    d.remainingDays = remainingDays;
+    if (remainingDays < 0) d.status = 'expired';
+    else if (remainingDays <= WARNING_DAYS) d.status = 'warning';
+    else d.status = 'normal';
+  });
+}
+
+/**
+ * 更新 UI 中所有与预警天数相关的显示
+ */
+function updateWarningDaysUI() {
+  // 更新输入框
+  const input = document.getElementById('docWarningDaysInput');
+  if (input) input.value = WARNING_DAYS;
+  // 更新筛选下拉中的天数文案
+  const statusSelect = document.getElementById('docFilterStatus');
+  if (statusSelect) {
+    const warningOpt = statusSelect.querySelector('option[value="warning"]');
+    if (warningOpt) warningOpt.textContent = `即将到期（≤${WARNING_DAYS}天）`;
+  }
+  // 更新预警面板标题
+  const alertHeader = document.querySelector('#docAlertPanel .card-header span');
+  if (alertHeader) alertHeader.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-2"></i>即将到期预警（≤${WARNING_DAYS}天）`;
+}
+
 function refreshAllDocViews() {
   renderDocTable(documentsState.rawData, 'docRawBody', false);
   renderDocTable(documentsState.filteredData, 'docCleanBody', true);
@@ -529,6 +576,20 @@ function bindDocumentsEvents() {
     onDocFilterChange();
   });
 
+  // 预警天数输入
+  document.getElementById('docWarningDaysInput')?.addEventListener('change', function() {
+    const val = parseInt(this.value, 10);
+    if (isNaN(val) || val < 1) {
+      this.value = WARNING_DAYS;
+      return;
+    }
+    setWarningDays(val);
+  });
+  // 回车确认
+  document.getElementById('docWarningDaysInput')?.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { this.blur(); }
+  });
+
   // 窗口大小变化
   window.addEventListener('resize', function() {
     clearTimeout(window._docResizeTimer);
@@ -562,6 +623,7 @@ function initDocuments() {
   console.log('[台账-证件] 模块初始化');
   loadDocumentsData();
   bindDocumentsEvents();
+  updateWarningDaysUI();
   documentsState.filteredData = applyDocFilter();
   refreshAllDocViews();
   if (

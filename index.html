@@ -604,6 +604,13 @@
                   <input type="text" class="form-control" id="docFilterKeyword" placeholder="名称/位置/备注..." style="min-width:140px;">
                 </div>
               </div>
+              <div class="col-auto">
+                <label class="form-label small mb-0 text-muted" style="font-size:0.68rem;">预警天数</label>
+                <div class="input-group input-group-sm" style="width:110px;">
+                  <input type="number" class="form-control text-center" id="docWarningDaysInput" value="90" min="1" max="999" title="设置到期预警天数阈值" style="font-weight:bold;">
+                  <span class="input-group-text">天</span>
+                </div>
+              </div>
               <div class="col-auto d-flex align-items-end">
                 <button class="btn btn-outline-primary btn-sm" id="btnDocReset"><i class="bi bi-arrow-repeat me-1"></i>重置筛选</button>
               </div>
