@@ -54,6 +54,7 @@ function saveAccountingData() {
   try {
     const data = { rawData: accountingState.rawData, cleanData: accountingState.cleanData };
     localStorage.setItem(STORAGE_KEY_ACCOUNTING, JSON.stringify(data));
+    if (typeof FamilySync !== 'undefined') FamilySync.notifyDataChanged();
   } catch (e) { console.warn('[记账] 保存本地存储失败', e); }
 }
 
@@ -1297,8 +1298,11 @@ function initAccounting() {
   bindAccountingEvents();
   accountingState.filteredData = applyFilter();
   refreshAllViews();
-  // 如果没有数据则自动加载示例
-  if (accountingState.cleanData.length === 0) {
+  // 未登录时无数据则加载示例；登录用户默认为空白
+  if (
+    accountingState.cleanData.length === 0 &&
+    (typeof FamilyAuth === 'undefined' || FamilyAuth.shouldUseDemoData())
+  ) {
     importCSV(DEMO_GIFT_CSV);
   }
 }

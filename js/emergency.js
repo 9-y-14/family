@@ -71,14 +71,16 @@ function getDemoEmergencyItems() {
 
 /* ---------- 加载/保存 ---------- */
 function loadEmergencyData() {
+  const useDemo = typeof FamilyAuth === 'undefined' || FamilyAuth.shouldUseDemoData();
   try {
     const raw = localStorage.getItem(STORAGE_KEY_EMERGENCY_ITEMS);
     if (raw) {
       emItems = JSON.parse(raw);
-    } else {
-      // 首次加载，填充示例数据
+    } else if (useDemo) {
       emItems = getDemoEmergencyItems();
       saveEmergencyItems();
+    } else {
+      emItems = [];
     }
     const checkRaw = localStorage.getItem(STORAGE_KEY_EMERGENCY_LAST_CHECK);
     if (checkRaw) emLastCheckDate = checkRaw;
@@ -86,11 +88,17 @@ function loadEmergencyData() {
 }
 
 function saveEmergencyItems() {
-  try { localStorage.setItem(STORAGE_KEY_EMERGENCY_ITEMS, JSON.stringify(emItems)); } catch (e) {}
+  try {
+    localStorage.setItem(STORAGE_KEY_EMERGENCY_ITEMS, JSON.stringify(emItems));
+    if (typeof FamilySync !== 'undefined') FamilySync.notifyDataChanged();
+  } catch (e) {}
 }
 
 function saveEmergencyLastCheck() {
-  try { localStorage.setItem(STORAGE_KEY_EMERGENCY_LAST_CHECK, emLastCheckDate); } catch (e) {}
+  try {
+    localStorage.setItem(STORAGE_KEY_EMERGENCY_LAST_CHECK, emLastCheckDate);
+    if (typeof FamilySync !== 'undefined') FamilySync.notifyDataChanged();
+  } catch (e) {}
 }
 
 /* ---------- 计算下次盘点日期（半年后） ---------- */

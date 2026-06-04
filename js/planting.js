@@ -15,6 +15,7 @@ let plantMembers = [];    // 参赛家庭成员
 let plants = [];          // 植物列表
 let plantWeekStart = null; // 本周起始日期
 let plantWeekCareCounts = {}; // 本周照料计数 {memberId: count}
+let plantWeekDraw = null; // 本周心愿抽取 { weekStart, wishId, bestMemberId, bestMemberName, drawnAt }
 
 /* ---------- 成长阶段 ---------- */
 const GROWTH_STAGES = [
@@ -80,53 +81,93 @@ function getDemoPlants() {
 
 /* ---------- 加载/保存 ---------- */
 function loadPlantData() {
+  const useDemo = typeof FamilyAuth === 'undefined' || FamilyAuth.shouldUseDemoData();
   try {
     const rawM = localStorage.getItem(STORAGE_KEY_PLANT_MEMBERS);
     if (rawM) {
       plantMembers = JSON.parse(rawM);
-    } else {
+    } else if (useDemo) {
       plantMembers = getDemoPlantMembers();
       savePlantMembers();
+    } else {
+      plantMembers = [];
     }
     const rawP = localStorage.getItem(STORAGE_KEY_PLANTS);
     if (rawP) {
       plants = JSON.parse(rawP);
-      // 计算离线增长
       applyOfflineGrowth();
-    } else {
+    } else if (useDemo) {
       plants = getDemoPlants();
       savePlants();
+    } else {
+      plants = [];
     }
     const rawW = localStorage.getItem(STORAGE_KEY_PLANT_WEEK);
     if (rawW) {
       const weekData = JSON.parse(rawW);
       plantWeekStart = weekData.weekStart;
       plantWeekCareCounts = weekData.careCounts || {};
+      plantWeekDraw = weekData.draw || null;
+    } else if (useDemo) {
+      plantWeekStart = getWeekMonday();
+      plantWeekCareCounts = { m1: 5, m2: 3, m4: 4, m3: 1 };
+      plantWeekDraw = null;
+      savePlantWeek();
     } else {
       plantWeekStart = getWeekMonday();
-      plantWeekCareCounts = { 'm1': 5, 'm2': 3, 'm4': 4, 'm3': 1 };
-      savePlantWeek();
+      plantWeekCareCounts = {};
+      plantWeekDraw = null;
     }
-    // 检查是否需要重置本周
     checkWeekReset();
+    migrateLegacyPlantClaimed();
   } catch (e) { console.warn('[种植争霸] 读取数据失败', e); }
 }
 
 function savePlantMembers() {
-  try { localStorage.setItem(STORAGE_KEY_PLANT_MEMBERS, JSON.stringify(plantMembers)); } catch (e) {}
+  try {
+    localStorage.setItem(STORAGE_KEY_PLANT_MEMBERS, JSON.stringify(plantMembers));
+    if (typeof FamilySync !== 'undefined') FamilySync.notifyDataChanged();
+  } catch (e) {}
 }
 
 function savePlants() {
-  try { localStorage.setItem(STORAGE_KEY_PLANTS, JSON.stringify(plants)); } catch (e) {}
+  try {
+    localStorage.setItem(STORAGE_KEY_PLANTS, JSON.stringify(plants));
+    if (typeof FamilySync !== 'undefined') FamilySync.notifyDataChanged();
+  } catch (e) {}
 }
 
 function savePlantWeek() {
   try {
     localStorage.setItem(STORAGE_KEY_PLANT_WEEK, JSON.stringify({
       weekStart: plantWeekStart,
-      careCounts: plantWeekCareCounts
+      careCounts: plantWeekCareCounts,
+      draw: plantWeekDraw
     }));
+    if (typeof FamilySync !== 'undefined') FamilySync.notifyDataChanged();
   } catch (e) {}
+}
+
+/** 迁移旧版「按成员ID标记已抽取」到 wishId 关联 */
+function migrateLegacyPlantClaimed() {
+  if (plantWeekDraw && plantWeekDraw.wishId) return;
+  try {
+    const claimedKey = 'family_manager_plant_claimed_' + plantWeekStart;
+    const legacyMemberId = localStorage.getItem(claimedKey);
+    if (!legacyMemberId || typeof WishJar === 'undefined') return;
+    const drawn = WishJar.getDrawnForWeek(plantWeekStart);
+    if (drawn) {
+      plantWeekDraw = {
+        weekStart: plantWeekStart,
+        wishId: drawn.id,
+        bestMemberId: drawn.plantDraw?.bestMemberId || legacyMemberId,
+        bestMemberName: drawn.plantDraw?.bestMemberName || '',
+        drawnAt: drawn.plantDraw?.drawnAt || ''
+      };
+      savePlantWeek();
+      localStorage.removeItem(claimedKey);
+    }
+  } catch (_) {}
 }
 
 /* ---------- 离线增长 ---------- */
@@ -163,6 +204,7 @@ function checkWeekReset() {
   if (plantWeekStart !== thisMonday) {
     plantWeekStart = thisMonday;
     plantWeekCareCounts = {};
+    plantWeekDraw = null;
     savePlantWeek();
   }
 }
@@ -343,21 +385,37 @@ function updateBestGrower(best) {
   document.getElementById('bgName').textContent = best.name;
   document.getElementById('bgScore').textContent = '本周照料 ' + best.weekCare + ' 次 · 总成长值 ' + best.totalGrowth;
 
-  // 检查是否已抽过心愿
-  const claimedKey = 'family_manager_plant_claimed_' + plantWeekStart;
-  let claimed = false;
-  try { claimed = localStorage.getItem(claimedKey) === best.id; } catch (e) {}
-
   const drawBtn = document.getElementById('btnDrawWish');
-  if (claimed) {
-    document.getElementById('bgWish').textContent = '本周已抽取';
+  const drawnWish = getDrawnWishForCurrentWeek();
+
+  if (plantWeekDraw && plantWeekDraw.bestMemberId === best.id && drawnWish) {
+    document.getElementById('bgWish').textContent = drawnWish.content;
+    drawBtn.disabled = true;
+    drawBtn.textContent = '✅ 本周已抽取';
+  } else if (plantWeekDraw && drawnWish) {
+    document.getElementById('bgWish').textContent = '本周已由「' + (plantWeekDraw.bestMemberName || '其他成员') + '」抽取';
     drawBtn.disabled = true;
     drawBtn.textContent = '✅ 本周已抽取';
   } else {
-    document.getElementById('bgWish').textContent = '点击抽取';
+    document.getElementById('bgWish').textContent = '点击从心愿罐抽取';
     drawBtn.disabled = false;
     drawBtn.textContent = '🎁 为最佳种植者抽取心愿';
   }
+}
+
+function getDrawnWishForCurrentWeek() {
+  if (typeof WishJar !== 'undefined') {
+    WishJar.reloadFromStorage();
+    return WishJar.getDrawnForWeek(plantWeekStart);
+  }
+  if (plantWeekDraw && plantWeekDraw.wishId) {
+    try {
+      const raw = localStorage.getItem('family_manager_wishes');
+      const all = raw ? JSON.parse(raw) : [];
+      return all.find(w => w.id === plantWeekDraw.wishId) || null;
+    } catch (_) {}
+  }
+  return null;
 }
 
 /* ---------- 已领取心愿记录 ---------- */
@@ -375,11 +433,18 @@ function renderClaimedWishes() {
       return;
     }
 
-    tbody.innerHTML = claimed.map(c => `<tr>
+    tbody.innerHTML = claimed.map(c => {
+      let wishText = c.wish || '';
+      if (c.wishId && typeof WishJar !== 'undefined') {
+        const linked = WishJar.findById(c.wishId);
+        if (linked) wishText = linked.content;
+      }
+      return `<tr>
       <td>${escapeHtmlP(c.date)}</td>
       <td>${escapeHtmlP(c.member)}</td>
-      <td>${escapeHtmlP(c.wish)}</td>
-    </tr>`).join('');
+      <td>${escapeHtmlP(wishText)}</td>
+    </tr>`;
+    }).join('');
   } catch (e) {}
 }
 
@@ -398,16 +463,43 @@ function addPlantMember() {
 
   plantMembers.push({ id, name, avatar });
   savePlantMembers();
+  if (typeof WishJar !== 'undefined') {
+    WishJar.reloadFromStorage();
+    const list = WishJar.getWishes();
+    let changed = false;
+    list.forEach(w => {
+      if (!w.anonymous && (w.member || '').trim() === name) {
+        w.plantMemberId = id;
+        changed = true;
+      }
+    });
+    if (changed) {
+      WishJar.save();
+      WishJar.renderGrowth();
+    }
+  }
   renderPlantMembers();
   renderRanking();
   nameInput.value = '';
 }
 
 function deletePlantMember(id) {
-  if (!confirm('确定删除该成员吗？其所有植物也将被移除。')) return;
+  const member = plantMembers.find(m => m.id === id);
+  const msg = member
+    ? '确定删除成员「' + member.name + '」吗？\n· 其所有植物将被移除\n· 其在心愿储蓄罐中提出的心愿也将一并删除'
+    : '确定删除该成员吗？其所有植物与关联心愿也将被移除。';
+  if (!confirm(msg)) return;
+
+  if (typeof WishJar !== 'undefined') {
+    const removed = WishJar.deleteByPlantMember(id, member ? member.name : '');
+    if (removed > 0) WishJar.renderGrowth();
+  }
+
   plantMembers = plantMembers.filter(m => m.id !== id);
   plants = plants.filter(p => p.memberId !== id);
   delete plantWeekCareCounts[id];
+  if (plantWeekDraw && plantWeekDraw.bestMemberId === id) plantWeekDraw = null;
+
   savePlantMembers();
   savePlants();
   savePlantWeek();
@@ -495,39 +587,36 @@ function drawWishForBest() {
     return;
   }
 
-  // 检查是否已抽过
-  const claimedKey = 'family_manager_plant_claimed_' + plantWeekStart;
-  try {
-    if (localStorage.getItem(claimedKey) === best.id) {
-      alert('本周已经为最佳种植者抽取过心愿了！');
-      return;
-    }
-  } catch (e) {}
+  if (plantWeekDraw && plantWeekDraw.weekStart === plantWeekStart) {
+    alert('本周已经为最佳种植者抽取过心愿了！');
+    return;
+  }
 
-  // 从心愿储蓄罐随机抽取
-  let wishPool = [];
-  try {
-    const raw = localStorage.getItem('family_manager_wishes');
-    if (raw) {
-      const allWishes = JSON.parse(raw);
-      wishPool = allWishes.filter(w => w.status === 'pending');
-    }
-  } catch (e) {}
+  if (typeof WishJar === 'undefined') {
+    alert('心愿储蓄罐模块未加载，请刷新页面后重试。');
+    return;
+  }
 
-  if (wishPool.length === 0) {
+  WishJar.reloadFromStorage();
+  const picked = WishJar.drawForBestGrower(best, plantWeekStart);
+  if (!picked) {
     alert('心愿储蓄罐中暂无待完成的心愿！先去放入一些心愿吧。');
     return;
   }
 
-  const picked = wishPool[Math.floor(Math.random() * wishPool.length)];
+  plantWeekDraw = {
+    weekStart: plantWeekStart,
+    wishId: picked.id,
+    bestMemberId: best.id,
+    bestMemberName: best.name,
+    drawnAt: new Date().toISOString().substring(0, 10)
+  };
+  savePlantWeek();
+
   document.getElementById('bgWish').textContent = picked.content;
   document.getElementById('btnDrawWish').disabled = true;
   document.getElementById('btnDrawWish').textContent = '✅ 本周已抽取';
 
-  // 保存已抽取记录
-  try { localStorage.setItem(claimedKey, best.id); } catch (e) {}
-
-  // 保存到已领取记录
   let claimed = [];
   try {
     const raw = localStorage.getItem('family_manager_claimed_wishes');
@@ -536,19 +625,26 @@ function drawWishForBest() {
   claimed.unshift({
     date: new Date().toISOString().substring(0, 10),
     member: best.name,
-    wish: picked.content
+    wish: picked.content,
+    wishId: picked.id
   });
-  try { localStorage.setItem('family_manager_claimed_wishes', JSON.stringify(claimed)); } catch (e) {}
+  try {
+    localStorage.setItem('family_manager_claimed_wishes', JSON.stringify(claimed));
+    if (typeof FamilySync !== 'undefined') FamilySync.notifyDataChanged();
+  } catch (e) {}
 
+  WishJar.renderGrowth();
   renderClaimedWishes();
-  alert('🎉 恭喜 ' + best.name + ' 成为本周最佳种植者！\n抽中的心愿：' + picked.content);
+  alert('🎉 恭喜 ' + best.name + ' 成为本周最佳种植者！\n已从心愿储蓄罐抽取：' + picked.content);
 }
 
 function resetPlantWeek() {
-  if (!confirm('确定重置本周数据吗？照料次数将清零。')) return;
+  if (!confirm('确定重置本周数据吗？照料次数与本周心愿抽取将清零。')) return;
   plantWeekStart = getWeekMonday();
   plantWeekCareCounts = {};
+  plantWeekDraw = null;
   savePlantWeek();
+  if (typeof WishJar !== 'undefined') WishJar.renderGrowth();
   renderAllPlanting();
 }
 

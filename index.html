@@ -38,15 +38,44 @@
             </a>
           </li>
         </ul>
-        <span class="navbar-text ms-3 text-white-50 small d-none d-lg-inline">
-          <i class="bi bi-database me-1"></i>纯前端 · 本地处理 · 数据不上传
+        <div id="authGuest" class="d-flex align-items-center gap-1 ms-2">
+          <button type="button" class="btn btn-outline-light btn-sm" id="btnShowLogin">
+            <i class="bi bi-box-arrow-in-right me-1"></i>登录
+          </button>
+          <button type="button" class="btn btn-light btn-sm" id="btnShowRegister">
+            <i class="bi bi-house-add me-1"></i>创建家庭
+          </button>
+        </div>
+        <div id="authUser" class="d-none align-items-center gap-2 ms-2">
+          <span class="text-white-50 small d-none d-md-inline" id="authUserLabel"></span>
+          <button type="button" class="btn btn-outline-warning btn-sm d-none" id="btnManagerReauth" title="重新验证管理者身份">
+            <i class="bi bi-shield-lock"></i>
+          </button>
+          <button type="button" class="btn btn-outline-light btn-sm" id="btnLogout">
+            <i class="bi bi-box-arrow-right"></i>
+          </button>
+        </div>
+        <span class="navbar-text ms-2 text-white-50 small d-none d-xl-inline" id="dataModeHint">
+          <i class="bi bi-eye me-1"></i>未登录：示例数据预览
         </span>
       </div>
     </div>
   </nav>
 
   <!-- ==================== 分区1：居家安全资产台账区 ==================== -->
-  <div id="zoneSafety" class="zone-container container-fluid px-4 py-4">
+  <div id="zoneSafety" class="zone-container container-fluid px-4 py-4 position-relative">
+
+    <!-- 台账区访问锁定（登录后非管理者或未认证时显示） -->
+    <div id="safetyZoneLock" class="safety-zone-lock" style="display:none;">
+      <div class="safety-lock-card text-center shadow-lg">
+        <i class="bi bi-shield-lock-fill text-danger display-4 mb-3"></i>
+        <h5 class="fw-bold lock-title">需要家庭管理者认证</h5>
+        <p class="text-muted small lock-desc mb-3">居家安全资产台账区包含敏感家庭数据，仅家庭管理者在验证后可访问。</p>
+        <button type="button" class="btn btn-danger btn-sm" id="btnUnlockSafetyFromLock">
+          <i class="bi bi-key-fill me-1"></i>管理者认证解锁
+        </button>
+      </div>
+    </div>
 
     <!-- 分区标题 -->
     <div class="zone-header mb-4">
@@ -59,8 +88,8 @@
           <small class="text-muted">人情往来 · 证件保单 · 家庭药品</small>
         </div>
         <div class="ms-auto">
-          <span class="badge bg-light text-muted border" style="font-size:0.72rem;">
-            <i class="bi bi-info-circle me-1"></i>全部数据本地存储，安全无忧
+          <span class="badge bg-light text-muted border" style="font-size:0.72rem;" id="safetyDataBadge">
+            <i class="bi bi-info-circle me-1"></i>未登录时为示例数据；登录后仅管理者可访问真实台账
           </span>
         </div>
       </div>
@@ -1037,8 +1066,9 @@
                 <div class="text-muted small mb-2" id="wishWeekMember">--</div>
                 <div class="text-muted small mb-3" id="wishWeekLikes">--</div>
                 <button class="btn btn-warning btn-sm" id="btnWishRandomPick">
-                  <i class="bi bi-shuffle me-1"></i>重新随机抽取
+                  <i class="bi bi-link-45deg me-1"></i>查看种植争霸抽取
                 </button>
+                <p class="text-muted mt-2 mb-0" style="font-size:0.68rem;">与阳台种植争霸「最佳种植者抽取」同一心愿</p>
               </div>
             </div>
           </div>
@@ -1076,6 +1106,9 @@
           <div class="card-header bg-white border-bottom fw-bold d-flex justify-content-between align-items-center" style="color:#ff9800;">
             <span><i class="bi bi-journal-heart-fill me-2"></i>心愿储蓄罐</span>
             <div>
+              <button class="btn btn-sm btn-warning me-1" id="btnWishDemo" type="button">
+                <i class="bi bi-lightning-fill me-1"></i>加载示例数据
+              </button>
               <button class="btn btn-sm btn-outline-warning me-1" id="btnWishCheckExpired">
                 <i class="bi bi-exclamation-triangle me-1"></i>检查过期心愿
               </button>
@@ -1106,6 +1139,40 @@
                 <i class="bi bi-camera fs-1 d-block mb-2"></i>
                 还没有已完成的心愿记录<br>
                 <small>在心愿列表中点击"完成"并上传照片来记录美好瞬间</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 查看已完成心愿详情 -->
+        <div class="modal fade" id="modalViewCompletedWish" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow">
+              <div class="modal-header border-0" style="background:linear-gradient(135deg,#4caf50,#388e3c);color:#fff;">
+                <h6 class="modal-title fw-bold"><i class="bi bi-images me-2"></i>心愿完成记录</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body p-0">
+                <div id="viewWishImageWrap" class="wish-detail-image-wrap">
+                  <img id="viewWishImage" class="wish-detail-image" alt="心愿纪念照片" style="display:none;">
+                  <div id="viewWishImagePlaceholder" class="wish-detail-image-placeholder">
+                    <i class="bi bi-star-fill"></i>
+                    <span>暂无纪念照片</span>
+                  </div>
+                </div>
+                <div class="p-4">
+                  <div class="fw-bold fs-5 text-success mb-2" id="viewWishContent">--</div>
+                  <div class="d-flex flex-wrap gap-2 mb-3 small">
+                    <span class="badge bg-light text-dark border" id="viewWishMember">--</span>
+                    <span class="badge bg-success bg-opacity-10 text-success border border-success" id="viewWishDate">--</span>
+                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger" id="viewWishLikes">--</span>
+                  </div>
+                  <div class="wish-detail-note-box rounded p-3" id="viewWishNoteBox" style="display:none;">
+                    <div class="small text-muted mb-1"><i class="bi bi-chat-quote me-1"></i>完成感言</div>
+                    <div id="viewWishNote" class="mb-0"></div>
+                  </div>
+                  <p class="text-muted small mb-0 mt-3" id="viewWishProposed">提出日期：--</p>
+                </div>
               </div>
             </div>
           </div>
@@ -1349,10 +1416,162 @@
     </div><!-- /#growthSubTabContent -->
   </div><!-- /#zoneGrowth -->
 
+  <!-- ==================== 登录 / 注册弹窗 ==================== -->
+  <div class="modal fade" id="modalLogin" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold"><i class="bi bi-box-arrow-in-right me-2"></i>登录</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="small text-muted">登录后同步您家庭的真实数据；未登录时网站展示示例数据供预览。</p>
+          <div class="alert alert-danger small d-none" id="loginError"></div>
+          <form id="formLogin" autocomplete="on">
+            <div class="mb-3">
+              <label class="form-label small fw-bold">用户名</label>
+              <input type="text" class="form-control" id="loginUsername" required autocomplete="username">
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-bold">密码</label>
+              <input type="password" class="form-control" id="loginPassword" required autocomplete="current-password">
+            </div>
+            <button type="submit" class="btn btn-primary w-100" id="btnLoginSubmit">登录</button>
+          </form>
+          <div class="text-center mt-3 small">
+            <a href="#" id="linkToJoinFromLogin">有邀请码？加入已有家庭</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="modalRegister" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold"><i class="bi bi-house-add me-2"></i>创建家庭（管理者）</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="small text-muted">以家庭为单位使用。创建者成为<strong>家庭管理者</strong>，可管理台账区；请设置管理者验证码用于访问敏感台账。</p>
+          <div class="alert alert-danger small d-none" id="registerError"></div>
+          <form id="formRegister" autocomplete="off">
+            <div class="mb-2">
+              <label class="form-label small fw-bold">家庭名称</label>
+              <input type="text" class="form-control form-control-sm" id="regFamilyName" placeholder="如：张家" required>
+            </div>
+            <div class="mb-2">
+              <label class="form-label small fw-bold">您的称呼</label>
+              <input type="text" class="form-control form-control-sm" id="regDisplayName" placeholder="如：爸爸">
+            </div>
+            <div class="mb-2">
+              <label class="form-label small fw-bold">登录用户名</label>
+              <input type="text" class="form-control form-control-sm" id="regUsername" required autocomplete="username">
+            </div>
+            <div class="mb-2">
+              <label class="form-label small fw-bold">登录密码（至少6位）</label>
+              <input type="password" class="form-control form-control-sm" id="regPassword" minlength="6" required autocomplete="new-password">
+            </div>
+            <div class="mb-2">
+              <label class="form-label small fw-bold">管理者验证码（访问台账区用，至少4位）</label>
+              <input type="password" class="form-control form-control-sm" id="regManagerPin" minlength="4" required autocomplete="off">
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-bold">确认管理者验证码</label>
+              <input type="password" class="form-control form-control-sm" id="regManagerPin2" minlength="4" required autocomplete="off">
+            </div>
+            <button type="submit" class="btn btn-danger w-100" id="btnRegisterSubmit">创建家庭并登录</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="modalJoin" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold"><i class="bi bi-people me-2"></i>加入家庭</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="small text-muted">输入家庭管理者提供的<strong>邀请码</strong>加入。普通成员可使用温情成长互动区，无法查看台账区。</p>
+          <div class="alert alert-danger small d-none" id="joinError"></div>
+          <form id="formJoin" autocomplete="off">
+            <div class="mb-2">
+              <label class="form-label small fw-bold">家庭邀请码</label>
+              <input type="text" class="form-control form-control-sm text-uppercase" id="joinInviteCode" placeholder="8位邀请码" required>
+            </div>
+            <div class="mb-2">
+              <label class="form-label small fw-bold">您的称呼</label>
+              <input type="text" class="form-control form-control-sm" id="joinDisplayName" placeholder="如：妈妈">
+            </div>
+            <div class="mb-2">
+              <label class="form-label small fw-bold">登录用户名</label>
+              <input type="text" class="form-control form-control-sm" id="joinUsername" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-bold">登录密码（至少6位）</label>
+              <input type="password" class="form-control form-control-sm" id="joinPassword" minlength="6" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-100" id="btnJoinSubmit">加入家庭</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="modalManagerVerify" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content border-danger">
+        <div class="modal-header bg-danger bg-opacity-10 border-0">
+          <h6 class="modal-title fw-bold text-danger"><i class="bi bi-shield-lock me-2"></i>管理者身份认证</h6>
+        </div>
+        <div class="modal-body">
+          <p class="small text-muted mb-3">请输入创建家庭时设置的<strong>管理者验证码</strong>，以访问居家安全资产台账区。验证有效期 30 分钟。</p>
+          <div class="alert alert-danger small d-none" id="managerVerifyError"></div>
+          <form id="formManagerVerify">
+            <input type="password" class="form-control mb-3" id="managerPinInput" placeholder="管理者验证码" required autocomplete="off">
+            <button type="submit" class="btn btn-danger w-100 btn-sm">验证并进入台账区</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="modalInviteCode" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header border-0">
+          <h5 class="modal-title fw-bold text-success"><i class="bi bi-check-circle me-2"></i>家庭创建成功</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body text-center">
+          <p class="small text-muted">请将以下邀请码分享给家人，他们可加入您的家庭：</p>
+          <div class="display-6 fw-bold text-primary letter-spacing-wide py-3" id="inviteCodeDisplay">--------</div>
+          <p class="small text-muted mb-0">普通成员加入后仅可使用「家庭温情成长互动区」</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="authToast" class="toast" role="alert">
+      <div class="d-flex">
+        <div class="toast-body"></div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>
+  </div>
+
   <!-- ==================== JS 依赖库 ==================== -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+  <!-- 认证与同步（需在业务模块之前加载） -->
+  <script src="js/family-sync.js"></script>
+  <script src="js/family-auth.js"></script>
   <!-- 业务逻辑 -->
   <script src="js/accounting.js"></script>
   <script src="js/documents.js"></script>

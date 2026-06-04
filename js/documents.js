@@ -38,6 +38,7 @@ function saveDocumentsData() {
   try {
     const data = { rawData: documentsState.rawData, cleanData: documentsState.cleanData };
     localStorage.setItem(STORAGE_KEY_DOCUMENTS, JSON.stringify(data));
+    if (typeof FamilySync !== 'undefined') FamilySync.notifyDataChanged();
   } catch (e) { console.warn('[证件] 保存本地存储失败', e); }
 }
 
@@ -563,8 +564,10 @@ function initDocuments() {
   bindDocumentsEvents();
   documentsState.filteredData = applyDocFilter();
   refreshAllDocViews();
-  // 如果没有数据则自动加载示例
-  if (documentsState.cleanData.length === 0) {
+  if (
+    documentsState.cleanData.length === 0 &&
+    (typeof FamilyAuth === 'undefined' || FamilyAuth.shouldUseDemoData())
+  ) {
     importDocCSV(DEMO_DOC_CSV);
   }
 }

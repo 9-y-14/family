@@ -56,41 +56,254 @@ function getDemoWishes() {
   const l4mStr = last4m.toISOString().substring(0, 10);
 
   return [
-    { date: lwStr, content: '想养一只小猫咪', member: '女儿', anonymous: false, likes: 3, status: 'pending', completedDate: '', completedNote: '', completedImage: '' },
-    { date: lmStr, content: '希望爸爸少看手机多陪我玩', member: '儿子', anonymous: false, likes: 5, status: 'pending', completedDate: '', completedNote: '', completedImage: '' },
-    { date: todayStr, content: '希望周末能睡到自然醒', member: '', anonymous: true, likes: 1, status: 'pending', completedDate: '', completedNote: '', completedImage: '' },
-    { date: l2mStr, content: '想去海边露营', member: '妈妈', anonymous: false, likes: 4, status: 'completed', completedDate: lwStr, completedNote: '全家一起去了深圳西涌，超开心！', completedImage: '' },
-    { date: l3mStr, content: '想要一辆新自行车', member: '儿子', anonymous: false, likes: 6, status: 'completed', completedDate: l2mStr, completedNote: '买了一辆蓝色山地车，每天骑车上学', completedImage: '' },
-    { date: l4mStr, content: '想吃一顿海底捞', member: '爸爸', anonymous: false, likes: 2, status: 'completed', completedDate: l3mStr, completedNote: '全家人周末一起去吃了，番茄锅底yyds！', completedImage: '' },
+    { date: lwStr, content: '想养一只小猫咪', member: '女儿', anonymous: false, likes: 3, status: 'pending', completedDate: '', completedNote: '', completedImage: '', plantDraw: null },
+    { date: lmStr, content: '希望爸爸少看手机多陪我玩', member: '儿子', anonymous: false, likes: 5, status: 'pending', completedDate: '', completedNote: '', completedImage: '', plantDraw: null },
+    { date: todayStr, content: '想买一套乐高城市系列积木', member: '儿子', anonymous: false, likes: 4, status: 'pending', completedDate: '', completedNote: '', completedImage: '', plantDraw: null },
+    { date: lwStr, content: '周末想去游乐园坐过山车', member: '儿子', anonymous: false, likes: 7, status: 'pending', completedDate: '', completedNote: '', completedImage: '', plantDraw: null },
+    { date: lmStr, content: '希望能学会游泳', member: '儿子', anonymous: false, likes: 2, status: 'pending', completedDate: '', completedNote: '', completedImage: '', plantDraw: null },
+    { date: todayStr, content: '希望周末能睡到自然醒', member: '', anonymous: true, likes: 1, status: 'pending', completedDate: '', completedNote: '', completedImage: '', plantDraw: null },
+    { date: l2mStr, content: '想去海边露营', member: '妈妈', anonymous: false, likes: 4, status: 'completed', completedDate: lwStr, completedNote: '全家一起去了深圳西涌，超开心！', completedImage: '', plantDraw: null },
+    { date: l3mStr, content: '想要一辆新自行车', member: '儿子', anonymous: false, likes: 6, status: 'completed', completedDate: l2mStr, completedNote: '买了一辆蓝色山地车，每天骑车上学', completedImage: '', plantDraw: null },
+    { date: l4mStr, content: '想吃一顿海底捞', member: '爸爸', anonymous: false, likes: 2, status: 'completed', completedDate: l3mStr, completedNote: '全家人周末一起去吃了，番茄锅底yyds！', completedImage: '', plantDraw: null },
   ];
+}
+
+/** 儿子提出的心愿示例（与种植争霸「儿子」成员 m3 关联） */
+function getSonDemoWishes() {
+  return getDemoWishes().filter(w => w.member === '儿子');
+}
+
+function appendMissingSonDemoWishes() {
+  if (typeof FamilyAuth !== 'undefined' && !FamilyAuth.shouldUseDemoData()) return;
+  const hasSon = wishes.some(w => !w.anonymous && (w.member || '').trim() === '儿子');
+  if (hasSon) return;
+  getSonDemoWishes().forEach(w => {
+    wishes.push(attachWishMeta({ ...w, plantMemberId: 'm3', plantDraw: w.plantDraw || null }));
+  });
+  saveWishes();
+}
+
+function loadWishDemoData() {
+  if (wishes.length > 0) {
+    if (!confirm('将加载完整示例心愿（含儿子、女儿、爸妈等），已有心愿数据将被替换。确定继续？')) return;
+  }
+  wishes = getDemoWishes().map(w => attachWishMeta({ ...w, plantMemberId: w.member === '儿子' ? 'm3' : resolvePlantMemberId(w.member, w.anonymous) }));
+  saveWishes();
+  renderAllGrowth();
+  if (typeof renderAllPlanting === 'function') renderAllPlanting();
+  alert('已加载示例心愿，其中儿子提出的心愿共 ' + getSonDemoWishes().length + ' 条。');
 }
 
 /* ---------- 加载/保存 ---------- */
 function loadGrowthData() {
+  const useDemo = typeof FamilyAuth === 'undefined' || FamilyAuth.shouldUseDemoData();
   try {
     const rawC = localStorage.getItem(STORAGE_KEY_COMPLAINTS);
     if (rawC) {
       complaints = JSON.parse(rawC);
-    } else {
+    } else if (useDemo) {
       complaints = getDemoComplaints();
       saveComplaints();
+    } else {
+      complaints = [];
     }
     const rawW = localStorage.getItem(STORAGE_KEY_WISHES);
     if (rawW) {
       wishes = JSON.parse(rawW);
-    } else {
+    } else if (useDemo) {
       wishes = getDemoWishes();
       saveWishes();
+    } else {
+      wishes = [];
     }
+    ensureWishIds();
+    appendMissingSonDemoWishes();
   } catch (e) { console.warn('[成长互动] 读取数据失败', e); }
 }
 
+function ensureWishIds() {
+  wishes.forEach(w => {
+    if (!w.id) w.id = 'w' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+    if (w.plantDraw && !w.plantDraw.weekStart) w.plantDraw = null;
+  });
+}
+
+function getPlantMembersFromStorage() {
+  try {
+    const raw = localStorage.getItem('family_manager_plant_members');
+    return raw ? JSON.parse(raw) : [];
+  } catch (_) {
+    return [];
+  }
+}
+
+function resolvePlantMemberId(memberName, anonymous) {
+  if (anonymous || !memberName) return '';
+  const members = getPlantMembersFromStorage();
+  const found = members.find(m => m.name === memberName.trim());
+  return found ? found.id : '';
+}
+
+function attachWishMeta(wish) {
+  if (!wish.id) wish.id = 'w' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+  wish.plantMemberId = resolvePlantMemberId(wish.member, wish.anonymous);
+  if (!wish.plantDraw) wish.plantDraw = null;
+  return wish;
+}
+
+function getPlantWeekMonday() {
+  const now = new Date();
+  const day = now.getDay();
+  const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+  const monday = new Date(now.setDate(diff));
+  monday.setHours(0, 0, 0, 0);
+  return monday.toISOString().substring(0, 10);
+}
+
+function readPlantWeekState() {
+  try {
+    const raw = localStorage.getItem('family_manager_plant_week');
+    if (!raw) return { weekStart: getPlantWeekMonday(), draw: null };
+    const data = JSON.parse(raw);
+    return { weekStart: data.weekStart || getPlantWeekMonday(), draw: data.draw || null };
+  } catch (_) {
+    return { weekStart: getPlantWeekMonday(), draw: null };
+  }
+}
+
+function findWishById(wishId) {
+  return wishes.find(w => w.id === wishId) || null;
+}
+
+function getWishDrawnForPlantWeek(weekStart) {
+  const w = wishes.find(x => x.plantDraw && x.plantDraw.weekStart === weekStart);
+  if (w) return w;
+  const state = readPlantWeekState();
+  if (state.draw && state.draw.weekStart === weekStart && state.draw.wishId) {
+    return findWishById(state.draw.wishId);
+  }
+  return null;
+}
+
+function deleteWishesForPlantMember(memberId, memberName) {
+  const name = (memberName || '').trim();
+  const removedIds = [];
+  wishes = wishes.filter(w => {
+    const byId = memberId && w.plantMemberId === memberId;
+    const byName = name && !w.anonymous && (w.member || '').trim() === name;
+    if (byId || byName) {
+      removedIds.push(w.id);
+      return false;
+    }
+    return true;
+  });
+  if (removedIds.length) {
+    cleanupAfterWishRemoved(removedIds);
+    saveWishes();
+  }
+  return removedIds.length;
+}
+
+function cleanupAfterWishRemoved(removedIds) {
+  const idSet = new Set(removedIds);
+  try {
+    const raw = localStorage.getItem('family_manager_plant_week');
+    if (raw) {
+      const weekData = JSON.parse(raw);
+      if (weekData.draw && idSet.has(weekData.draw.wishId)) {
+        weekData.draw = null;
+        localStorage.setItem('family_manager_plant_week', JSON.stringify(weekData));
+      }
+    }
+  } catch (_) {}
+  try {
+    const raw = localStorage.getItem('family_manager_claimed_wishes');
+    if (raw) {
+      let claimed = JSON.parse(raw);
+      claimed = claimed.filter(c => !c.wishId || !idSet.has(c.wishId));
+      localStorage.setItem('family_manager_claimed_wishes', JSON.stringify(claimed));
+    }
+  } catch (_) {}
+  try { localStorage.removeItem('family_manager_week_wish_pick'); } catch (_) {}
+}
+
+function assignWishPlantDraw(wishId, drawInfo) {
+  const wish = findWishById(wishId);
+  if (!wish) return null;
+  wish.plantDraw = {
+    weekStart: drawInfo.weekStart,
+    bestMemberId: drawInfo.bestMemberId,
+    bestMemberName: drawInfo.bestMemberName,
+    drawnAt: drawInfo.drawnAt || new Date().toISOString().substring(0, 10)
+  };
+  saveWishes();
+  return wish;
+}
+
+function drawWishForBestGrower(bestMember, weekStart) {
+  ensureWishIds();
+  const pool = wishes.filter(w => w.status === 'pending' && !(w.plantDraw && w.plantDraw.weekStart === weekStart));
+  if (pool.length === 0) return null;
+  const picked = pool[Math.floor(Math.random() * pool.length)];
+  assignWishPlantDraw(picked.id, {
+    weekStart,
+    bestMemberId: bestMember.id,
+    bestMemberName: bestMember.name
+  });
+  try {
+    const raw = localStorage.getItem('family_manager_plant_week');
+    const weekData = raw ? JSON.parse(raw) : { weekStart, careCounts: {} };
+    weekData.draw = {
+      weekStart,
+      wishId: picked.id,
+      bestMemberId: bestMember.id,
+      bestMemberName: bestMember.name,
+      drawnAt: new Date().toISOString().substring(0, 10)
+    };
+    localStorage.setItem('family_manager_plant_week', JSON.stringify(weekData));
+    if (typeof FamilySync !== 'undefined') FamilySync.notifyDataChanged();
+  } catch (_) {}
+  return picked;
+}
+
+/** 种植争霸模块调用的统一心愿接口 */
+window.WishJar = {
+  getWishes() {
+    ensureWishIds();
+    return wishes;
+  },
+  reloadFromStorage() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY_WISHES);
+      if (raw) wishes = JSON.parse(raw);
+      ensureWishIds();
+    } catch (_) {}
+    return wishes;
+  },
+  save: saveWishes,
+  findById: findWishById,
+  deleteByPlantMember: deleteWishesForPlantMember,
+  drawForBestGrower: drawWishForBestGrower,
+  getDrawnForWeek: getWishDrawnForPlantWeek,
+  getWeekMonday: getPlantWeekMonday,
+  readPlantWeekState,
+  renderGrowth: function () {
+    if (typeof renderAllGrowth === 'function') renderAllGrowth();
+  }
+};
+
 function saveComplaints() {
-  try { localStorage.setItem(STORAGE_KEY_COMPLAINTS, JSON.stringify(complaints)); } catch (e) {}
+  try {
+    localStorage.setItem(STORAGE_KEY_COMPLAINTS, JSON.stringify(complaints));
+    if (typeof FamilySync !== 'undefined') FamilySync.notifyDataChanged();
+  } catch (e) {}
 }
 
 function saveWishes() {
-  try { localStorage.setItem(STORAGE_KEY_WISHES, JSON.stringify(wishes)); } catch (e) {}
+  try {
+    localStorage.setItem(STORAGE_KEY_WISHES, JSON.stringify(wishes));
+    if (typeof FamilySync !== 'undefined') FamilySync.notifyDataChanged();
+  } catch (e) {}
 }
 
 /* ---------- 工具函数 ---------- */
@@ -199,9 +412,23 @@ function renderWishStats() {
 }
 
 function renderWishWeekPick() {
-  const pending = wishes.filter(w => w.status === 'pending');
+  const weekStart = getPlantWeekMonday();
+  const drawn = getWishDrawnForPlantWeek(weekStart);
+
+  if (drawn) {
+    const memberDisplay = drawn.anonymous ? '匿名' : (drawn.member || '匿名');
+    const grower = drawn.plantDraw?.bestMemberName || '最佳种植者';
+    document.getElementById('wishWeekContent').textContent = drawn.content;
+    document.getElementById('wishWeekMember').textContent = '提出：' + memberDisplay + ' · 由「' + grower + '」抽取';
+    document.getElementById('wishWeekLikes').textContent = '❤️ ' + (drawn.likes || 0) + ' 个点赞';
+    document.getElementById('wishWeekIcon').textContent = '🌿';
+    document.getElementById('wishWeekBadge').textContent = '种植争霸已关联';
+    return;
+  }
+
+  const pending = wishes.filter(w => w.status === 'pending' && !(w.plantDraw && w.plantDraw.weekStart === weekStart));
   if (pending.length === 0) {
-    document.getElementById('wishWeekContent').textContent = '暂无待完成心愿';
+    document.getElementById('wishWeekContent').textContent = '暂无待抽取心愿';
     document.getElementById('wishWeekMember').textContent = '';
     document.getElementById('wishWeekLikes').textContent = '';
     document.getElementById('wishWeekIcon').textContent = '💤';
@@ -209,26 +436,11 @@ function renderWishWeekPick() {
     return;
   }
 
-  // 优先显示上次随机抽中的，否则随机选一个
-  let picked = pending[Math.floor(Math.random() * pending.length)];
-  try {
-    const savedPick = localStorage.getItem('family_manager_week_wish_pick');
-    if (savedPick) {
-      const parsed = JSON.parse(savedPick);
-      const found = pending.find(w => w.content === parsed.content && w.member === parsed.member && w.date === parsed.date);
-      if (found) picked = found;
-    }
-  } catch (e) {}
-
-  // 保存本周抽中
-  try { localStorage.setItem('family_manager_week_wish_pick', JSON.stringify({ content: picked.content, member: picked.member, date: picked.date })); } catch (e) {}
-
-  const memberDisplay = picked.anonymous ? '匿名' : (picked.member || '匿名');
-  document.getElementById('wishWeekContent').textContent = picked.content;
-  document.getElementById('wishWeekMember').textContent = '—— ' + memberDisplay;
-  document.getElementById('wishWeekLikes').textContent = '❤️ ' + (picked.likes || 0) + ' 个点赞';
+  document.getElementById('wishWeekContent').textContent = '待阳台种植争霸抽取';
+  document.getElementById('wishWeekMember').textContent = '本周共 ' + pending.length + ' 个心愿待选';
+  document.getElementById('wishWeekLikes').textContent = '请最佳种植者前往种植区抽取';
   document.getElementById('wishWeekIcon').textContent = '🎯';
-  document.getElementById('wishWeekBadge').textContent = '本周心愿';
+  document.getElementById('wishWeekBadge').textContent = '待抽取';
 }
 
 function renderWishList() {
@@ -244,7 +456,9 @@ function renderWishList() {
     let statusBadge = '';
     if (w.status === 'completed') statusBadge = '<span class="badge bg-success">已完成</span>';
     else if (w.status === 'expired') statusBadge = '<span class="badge bg-danger">已过期</span>';
-    else statusBadge = '<span class="badge bg-warning text-dark">待完成</span>';
+    else if (w.plantDraw && w.plantDraw.weekStart === getPlantWeekMonday()) {
+      statusBadge = '<span class="badge bg-info text-dark" title="已由' + escapeHtmlG(w.plantDraw.bestMemberName || '最佳种植者') + '抽取">种植已抽取</span>';
+    } else statusBadge = '<span class="badge bg-warning text-dark">待完成</span>';
 
     const actionBtns = [];
     if (w.status === 'pending') {
@@ -282,24 +496,67 @@ function renderCompletedWishWall() {
   }
 
   const cards = completed.map(w => {
+    const idx = wishes.findIndex(x => x === w);
     const memberDisplay = w.anonymous ? '匿名' : (w.member || '匿名');
+    const notePreview = w.completedNote
+      ? escapeHtmlG(w.completedNote.length > 36 ? w.completedNote.substring(0, 36) + '…' : w.completedNote)
+      : '';
     const imgHtml = w.completedImage
-      ? `<img src="${w.completedImage}" style="width:100%;height:140px;object-fit:cover;border-radius:8px 8px 0 0;">`
-      : `<div class="text-center py-4" style="background:linear-gradient(135deg,#e8f5e9,#c8e6c9);border-radius:8px 8px 0 0;height:140px;display:flex;align-items:center;justify-content:center;">
+      ? `<img src="${w.completedImage}" alt="" class="wish-wall-thumb">`
+      : `<div class="wish-wall-thumb-placeholder">
           <i class="bi bi-star-fill fs-1" style="color:#ff9800;"></i>
         </div>`;
     return `<div class="col-lg-3 col-md-4 col-sm-6">
-      <div class="card border-0 shadow-sm h-100">
+      <div class="card border-0 shadow-sm h-100 wish-wall-card" role="button" tabindex="0"
+           data-wish-idx="${idx}" onclick="openCompletedWishDetail(${idx})"
+           onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openCompletedWishDetail(${idx});}">
         ${imgHtml}
         <div class="card-body py-2 small">
-          <div class="fw-bold">${escapeHtmlG(w.content)}</div>
-          <div class="text-muted">${memberDisplay} · ${escapeHtmlG(w.completedDate)}</div>
-          ${w.completedNote ? '<div class="text-muted mt-1" style="font-size:0.75rem;">' + escapeHtmlG(w.completedNote) + '</div>' : ''}
+          <div class="fw-bold text-truncate">${escapeHtmlG(w.content)}</div>
+          <div class="text-muted">${escapeHtmlG(memberDisplay)} · ${escapeHtmlG(w.completedDate)}</div>
+          ${notePreview ? '<div class="text-muted mt-1 wish-wall-note-preview">' + notePreview + '</div>' : ''}
+          <div class="text-success mt-2" style="font-size:0.7rem;"><i class="bi bi-zoom-in me-1"></i>点击查看详情</div>
         </div>
       </div>
     </div>`;
   });
   wall.innerHTML = cards.join('');
+}
+
+function openCompletedWishDetail(idx) {
+  const w = wishes[idx];
+  if (!w || w.status !== 'completed') return;
+
+  const memberDisplay = w.anonymous ? '匿名' : (w.member || '匿名');
+  document.getElementById('viewWishContent').textContent = w.content;
+  document.getElementById('viewWishMember').textContent = '提出者：' + memberDisplay;
+  document.getElementById('viewWishDate').textContent = '完成于 ' + (w.completedDate || '—');
+  document.getElementById('viewWishLikes').textContent = '❤️ ' + (w.likes || 0) + ' 赞';
+  document.getElementById('viewWishProposed').textContent = '提出日期：' + (w.date || '—');
+
+  const noteBox = document.getElementById('viewWishNoteBox');
+  const noteEl = document.getElementById('viewWishNote');
+  if (w.completedNote && w.completedNote.trim()) {
+    noteBox.style.display = 'block';
+    noteEl.textContent = w.completedNote;
+  } else {
+    noteBox.style.display = 'none';
+    noteEl.textContent = '';
+  }
+
+  const img = document.getElementById('viewWishImage');
+  const placeholder = document.getElementById('viewWishImagePlaceholder');
+  if (w.completedImage) {
+    img.src = w.completedImage;
+    img.style.display = 'block';
+    placeholder.style.display = 'none';
+  } else {
+    img.src = '';
+    img.style.display = 'none';
+    placeholder.style.display = 'flex';
+  }
+
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('modalViewCompletedWish')).show();
 }
 
 function likeWish(idx) {
@@ -311,9 +568,12 @@ function likeWish(idx) {
 
 function deleteWish(idx) {
   if (!confirm('确定删除这个心愿吗？')) return;
+  const removed = wishes[idx];
   wishes.splice(idx, 1);
+  if (removed && removed.id) cleanupAfterWishRemoved([removed.id]);
   saveWishes();
   renderAllGrowth();
+  if (typeof renderAllPlanting === 'function') renderAllPlanting();
 }
 
 function checkExpiredWishes() {
@@ -458,14 +718,15 @@ function bindGrowthEvents() {
     if (!content) { alert('请填写心愿内容！'); return; }
     if (!member) { alert('请填写提出家庭成员！'); return; }
 
-    wishes.push({
+    wishes.push(attachWishMeta({
       date: new Date().toISOString().substring(0, 10),
       content, member,
       anonymous,
       likes: 0,
       status: 'pending',
-      completedDate: '', completedNote: '', completedImage: ''
-    });
+      completedDate: '', completedNote: '', completedImage: '',
+      plantDraw: null
+    }));
     saveWishes();
     renderAllGrowth();
 
@@ -474,17 +735,21 @@ function bindGrowthEvents() {
     document.getElementById('wishAnonymous').checked = false;
   });
 
-  // 随机抽取本周落地心愿
+  // 刷新本周落地心愿（与种植争霸抽取结果同步）
   document.getElementById('btnWishRandomPick').addEventListener('click', function() {
-    const pending = wishes.filter(w => w.status === 'pending');
-    if (pending.length === 0) { alert('没有待完成的心愿可以抽取哦！'); return; }
-    // 清除缓存，重新随机
-    try { localStorage.removeItem('family_manager_week_wish_pick'); } catch (e) {}
-    renderWishWeekPick();
+    const drawn = getWishDrawnForPlantWeek(getPlantWeekMonday());
+    if (drawn) {
+      renderWishWeekPick();
+      alert('本周心愿已由「' + (drawn.plantDraw?.bestMemberName || '最佳种植者') + '」在种植争霸中抽取：\n' + drawn.content);
+      return;
+    }
+    alert('本周尚未抽取心愿。\n请前往「阳台种植争霸赛」，由本周最佳种植者点击「为最佳种植者抽取心愿」。');
   });
 
   // 检查过期心愿
   document.getElementById('btnWishCheckExpired').addEventListener('click', checkExpiredWishes);
+
+  document.getElementById('btnWishDemo')?.addEventListener('click', loadWishDemoData);
 
   // 完成心愿弹窗事件
   bindWishModalEvents();

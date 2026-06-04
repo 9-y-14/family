@@ -37,6 +37,26 @@ function switchZone(zoneName) {
   navGrowth.classList.remove('active');
 
   if (zoneName === 'safety') {
+    if (typeof FamilyAuth !== 'undefined' && FamilyAuth.isLoggedIn() && FamilyAuth.isMember()) {
+      zoneName = 'growth';
+    } else if (
+      typeof FamilyAuth !== 'undefined' &&
+      FamilyAuth.isLoggedIn() &&
+      FamilyAuth.isManager() &&
+      !FamilyAuth.isSafetyUnlocked()
+    ) {
+      if (typeof FamilyAuth.showManagerVerifyModal === 'function') {
+        FamilyAuth.showManagerVerifyModal(() => switchZone('safety'));
+      }
+      zoneGrowth.style.display = 'block';
+      navGrowth.classList.add('active');
+      if (!zoneInitialized.growth) {
+        zoneInitialized.growth = true;
+        initGrowthSubTab('complaint');
+      }
+      if (typeof FamilyAuth.updateSafetyVisibility === 'function') FamilyAuth.updateSafetyVisibility();
+      return;
+    }
     zoneSafety.style.display = 'block';
     navSafety.classList.add('active');
 
@@ -45,6 +65,7 @@ function switchZone(zoneName) {
       // 初始化第一个子Tab（人情往来）
       initSafetySubTab('accounting');
     }
+    if (typeof FamilyAuth !== 'undefined' && FamilyAuth.updateSafetyVisibility) FamilyAuth.updateSafetyVisibility();
   } else if (zoneName === 'growth') {
     zoneGrowth.style.display = 'block';
     navGrowth.classList.add('active');
@@ -109,7 +130,11 @@ function bindAllEvents() {
     link.addEventListener('click', function(e) {
       e.preventDefault();
       const zone = this.getAttribute('data-zone');
-      switchZone(zone);
+      if (typeof FamilyAuth !== 'undefined' && FamilyAuth.isLoggedIn()) {
+        FamilyAuth.switchZoneForAuth(zone);
+      } else {
+        switchZone(zone);
+      }
     });
   });
 
@@ -145,17 +170,17 @@ function bindAllEvents() {
 /* ---------- 页面启动 ---------- */
 document.addEventListener('DOMContentLoaded', function() {
   console.log('[家庭全能管家] 平台启动');
-  console.log('[家庭全能管家] 技术栈：HTML5 + Bootstrap5 + PapaParse + ECharts5');
-  console.log('[家庭全能管家] 数据模式：纯前端本地处理，无后端无数据库');
-
   bindAllEvents();
 
-  // 恢复上次选中的分区，或默认显示安全资产区
+  // 恢复上次选中的分区；登录成员默认成长区
   let activeZone = 'safety';
   try {
     const saved = localStorage.getItem('family_manager_active_zone');
     if (saved === 'growth') activeZone = 'growth';
   } catch (e) {}
+  if (typeof FamilyAuth !== 'undefined' && FamilyAuth.isLoggedIn() && FamilyAuth.isMember()) {
+    activeZone = 'growth';
+  }
 
   switchZone(activeZone);
 });
