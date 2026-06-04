@@ -55,13 +55,20 @@ const FamilyAuth = (function () {
   }
 
   async function apiPost(path, body) {
-    const res = await fetch(API_BASE.replace(/\/$/, '') + path, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-    const data = await res.json().catch(() => ({}));
-    return { ok: res.ok, status: res.status, data };
+    try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (session?.token) headers.Authorization = 'Bearer ' + session.token;
+      const res = await fetch(API_BASE.replace(/\/$/, '') + path, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body)
+      });
+      const data = await res.json().catch(() => ({}));
+      return { ok: res.ok, status: res.status, data };
+    } catch (e) {
+      console.error('[apiPost] 网络异常', e);
+      return { ok: false, status: 0, data: { error: '网络连接失败，请检查网络' } };
+    }
   }
 
   async function checkApi() {
