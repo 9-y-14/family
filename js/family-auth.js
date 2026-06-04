@@ -203,6 +203,7 @@ const FamilyAuth = (function () {
     switchZoneForAuth('safety');
     if (showMessage !== false) {
       showToast('已退出登录，当前显示为示例数据', 'info');
+      setTimeout(() => location.reload(), 800);
     }
   }
 
@@ -276,6 +277,8 @@ const FamilyAuth = (function () {
       if (typeof window !== 'undefined' && window.PlantingModule?.updateSyncUI) {
         window.PlantingModule.updateSyncUI();
       }
+      // 隐藏所有"加载示例数据"按钮（登录后应为空白数据）
+      document.querySelectorAll('.demo-btn-only').forEach(el => el.classList.add('d-none'));
     } else {
       guest.classList.remove('d-none');
       userBar.classList.add('d-none');
@@ -285,6 +288,8 @@ const FamilyAuth = (function () {
       if (safetyBadge) {
         safetyBadge.innerHTML = '<i class="bi bi-info-circle me-1"></i>未登录时为示例数据；登录后仅管理者可访问真实台账';
       }
+      // 未登录时显示"加载示例数据"按钮
+      document.querySelectorAll('.demo-btn-only').forEach(el => el.classList.remove('d-none'));
     }
   }
 
@@ -377,6 +382,8 @@ const FamilyAuth = (function () {
       if (r.ok) {
         bootstrap.Modal.getInstance(document.getElementById('modalLogin'))?.hide();
         showToast('登录成功，已同步家庭数据', 'success');
+        // 刷新页面，清除所有示例数据，以空白状态重新加载
+        setTimeout(() => location.reload(), 1200);
       } else {
         err.textContent = r.error;
         err.classList.remove('d-none');
@@ -431,6 +438,8 @@ const FamilyAuth = (function () {
       if (r.ok) {
         bootstrap.Modal.getInstance(document.getElementById('modalJoin'))?.hide();
         showToast('已加入家庭', 'success');
+        // 刷新页面，清除所有示例数据，以空白状态重新加载
+        setTimeout(() => location.reload(), 1200);
       } else {
         err.textContent = r.error;
         err.classList.remove('d-none');
@@ -638,6 +647,15 @@ const FamilyAuth = (function () {
         await refreshMemberList();
       } else {
         if (err) { err.textContent = r.error; err.classList.remove('d-none'); }
+      }
+    });
+
+    // 注册成功后关闭邀请码弹窗 → 刷新页面，清除示例数据
+    document.getElementById('modalInviteCode')?.addEventListener('hidden.bs.modal', () => {
+      if (isLoggedIn()) {
+        // 注册流程中管理器验证弹窗可能还在，确保session已保存
+        showToast('正在加载你的家庭数据...', 'info');
+        setTimeout(() => location.reload(), 600);
       }
     });
   }

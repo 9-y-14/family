@@ -897,8 +897,11 @@ document.addEventListener('DOMContentLoaded', function() {
   // 初始化图表
   renderAllChartsIncome();
 
-  // 自动加载示例数据
-  importCSVIncome(DEMO_INCOME_CSV_DATA);
-
-  console.log('[收礼-初始化] 完成，已加载示例数据');
+  // 自动加载示例数据（仅未登录时显示）
+  if (typeof FamilyAuth === 'undefined' || FamilyAuth.shouldUseDemoData()) {
+    importCSVIncome(DEMO_INCOME_CSV_DATA);
+    console.log('[收礼-初始化] 已加载示例数据');
+  } else {
+    console.log('[收礼-初始化] 已登录，跳过示例数据');
+  }
 });
