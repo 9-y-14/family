@@ -27,7 +27,22 @@ export async function onRequest(context) {
   const route = parts[0] || '';
 
   try {
-    if (route === 'health') return json({ ok: true, service: 'family-manager-api' });
+    if (route === 'health') {
+      let dbOk = false;
+      let dbError = '';
+      try {
+        const test = await env.DB.prepare('SELECT 1 AS test').first();
+        dbOk = test && test.test === 1;
+      } catch (e) {
+        dbError = e.message || String(e);
+      }
+      return json({
+        ok: true,
+        service: 'family-manager-api',
+        db: dbOk ? 'connected' : 'error',
+        dbError: dbError || undefined
+      });
+    }
 
     if (route === 'auth') {
       const action = parts[1] || '';
@@ -61,7 +76,11 @@ export async function onRequest(context) {
     return json({ error: '接口不存在' }, 404);
   } catch (err) {
     console.error(err);
-    return json({ error: err.message || '服务器错误' }, 500);
+    return json({
+      error: err.message || String(err) || '服务器错误',
+      stack: err.stack || '',
+      name: err.name || ''
+    }, 500);
   }
 }
 
@@ -80,26 +99,62 @@ async function registerManager(request, env) {
     return json({ error: '密码至少 6 位' }, 400);
   }
 
-  const existing = await env.DB.prepare('SELECT id FROM users WHERE username = ?').bind(username.trim()).first();
-  if (existing) return json({ error: '用户名已被使用' }, 409);
+  try {
+    const existing = await env.DB.prepare('SELECT id FROM users WHERE username = ?').bind(username.trim()).first();
+    if (existing) return json({ error: '用户名已被使用' }, 409);
+  } catch (e) {
+    return json({ error: 'DB查询失败: ' + (e.message || String(e)), detail: e.stack || '' }, 500);
+  }
 
-  const familyId = crypto.randomUUID();
-  const userId = crypto.randomUUID();
+  let familyId, userId;
+  try {
+    familyId = crypto.randomUUID();
+    userId = crypto.randomUUID();
+  } catch (e) {
+    return json({ error: 'crypto.randomUUID失败: ' + (e.message || String(e)) }, 500);
+  }
+
   const inviteCode = generateInviteCode();
   const now = Date.now();
-  const pinHash = await hashSecret(String(managerPin));
-  const passHash = await hashSecret(password);
 
-  await env.DB.prepare(
-    'INSERT INTO families (id, name, invite_code, manager_pin_hash, created_at) VALUES (?, ?, ?, ?, ?)'
-  ).bind(familyId, familyName.trim(), inviteCode, pinHash, now).run();
-  await env.DB.prepare(
-    'INSERT INTO users (id, family_id, username, password_hash, role, display_name, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
-  ).bind(userId, familyId, username.trim(), passHash, 'manager', (displayName || username).trim(), now).run();
-  await env.DB.prepare('INSERT INTO family_data (family_id, payload, updated_at) VALUES (?, ?, ?)')
-    .bind(familyId, '{}', now).run();
+  let pinHash, passHash;
+  try {
+    pinHash = await hashSecret(String(managerPin));
+    passHash = await hashSecret(password);
+  } catch (e) {
+    return json({ error: '密码哈希失败: ' + (e.message || String(e)), detail: e.stack || '' }, 500);
+  }
 
-  const token = await signToken({ sub: userId, role: 'manager', fid: familyId }, env);
+  try {
+    await env.DB.prepare(
+      'INSERT INTO families (id, name, invite_code, manager_pin_hash, created_at) VALUES (?, ?, ?, ?, ?)'
+    ).bind(familyId, familyName.trim(), inviteCode, pinHash, now).run();
+  } catch (e) {
+    return json({ error: '插入families失败: ' + (e.message || String(e)), detail: e.stack || '' }, 500);
+  }
+
+  try {
+    await env.DB.prepare(
+      'INSERT INTO users (id, family_id, username, password_hash, role, display_name, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    ).bind(userId, familyId, username.trim(), passHash, 'manager', (displayName || username).trim(), now).run();
+  } catch (e) {
+    return json({ error: '插入users失败: ' + (e.message || String(e)), detail: e.stack || '' }, 500);
+  }
+
+  try {
+    await env.DB.prepare('INSERT INTO family_data (family_id, payload, updated_at) VALUES (?, ?, ?)')
+      .bind(familyId, '{}', now).run();
+  } catch (e) {
+    return json({ error: '插入family_data失败: ' + (e.message || String(e)), detail: e.stack || '' }, 500);
+  }
+
+  let token;
+  try {
+    token = await signToken({ sub: userId, role: 'manager', fid: familyId }, env);
+  } catch (e) {
+    return json({ error: 'JWT签名失败: ' + (e.message || String(e)), detail: e.stack || '' }, 500);
+  }
+
   return json({
     token,
     inviteCode,
